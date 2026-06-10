@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -10,23 +11,26 @@ import 'package:sqflite/sqflite.dart';
 class Situation {
 
   final int id; 
-  final List<int> id_responses;
+  final List<Response>? responses;
   final String description;
 
-  const Situation({required this.id, required this.id_responses, required this.description});
+  const Situation({required this.id, this.responses, required this.description});
+
+  Map<String, Object?> toMap() {
+    return {'IdSituation': id, 'Description': description};
+  }
 
 }
 
 class Response {
 
   final int id;
-  final int id_situation;
-  final List<int>? id_formations;
-  final List<int>? weights;
+  final int idSituation;
+  final Map<Formation, int>? formations;
   final int type;
   final String? description;
 
-  const Response({required this.id, required this.id_situation, this.id_formations, this.description, required this.type, this.weights});
+  const Response({required this.id, required this.idSituation, this.formations, this.description, required this.type});
   
 }
 
@@ -38,14 +42,18 @@ class Formation {
 
   const Formation ({required this.id, required this.name, required this.description});
 
+  Map<String, Object?> toMap(){
+    return {'IdFormation' : id, 'Name' : name, 'Description': description};
+  }
+
 }
 
 class Result {
   final int id;
-  final List<int> id_formations;
+  final List<Formation> formations;
   final DateTime time;
 
-  const Result({required this.id, required this.id_formations, required this.time});
+  const Result({required this.id, required this.formations, required this.time});
 
 }
 
@@ -56,6 +64,13 @@ class Admin {
 
   const Admin({required this.id ,required this.login, required this.password});
 
+}
+
+class Category {
+  final int id;
+  final String label;
+
+  const Category({required this.id, required this.label});
 }
 
 void main() async {
@@ -70,4 +85,22 @@ void main() async {
     join(await getDatabasesPath(), 'data.db'),
   );
 
+  
+
+  Future<void> insertFormation(Formation formation) async {
+    // Get a reference to the database.
+    final db = await database;
+
+    // Insert the Dog into the correct table. You might also specify the
+    // `conflictAlgorithm` to use in case the same dog is inserted twice.
+    //
+    // In this case, replace any previous data.
+    await db.insert(
+      'Formation',
+      formation.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  // await insertFormation(Formation(id: 1, name: "INFO", description: "La formation est une formation."));
 }
