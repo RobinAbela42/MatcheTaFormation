@@ -313,13 +313,12 @@ void main() async {
 
   Future<List<Admin>> admins() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('Admin');
-    return List.generate(maps.length, (i) {
-      return Admin(
-        id: maps[i]['IdAdmin'],
-        login: maps[i]['Login'],
-        password: maps[i]['Hash'],
-      );
-    });
+    final List<Map<String, Object?>> adminMaps = await db.query('Admin');
+    return [
+      for (final {'IdAdmin': id as int, 'Login': login as String, 'Hash': password as String} in adminMaps)
+        Admin(id: id, login: login, password: password)
+    ];
   }
+
+  
 }
