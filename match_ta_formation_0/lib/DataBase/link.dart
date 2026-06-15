@@ -1,4 +1,4 @@
-/// link.dart is the main file to  link the database to the app. 
+/// link.dart is the main file to  link the database to the app.
 
 import 'dart:async';
 
@@ -9,52 +9,120 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 class Situation {
-
-  final int id; 
+  final int id;
   final List<Response>? responses;
   final String description;
 
-  const Situation({required this.id, this.responses, required this.description});
+  const Situation({
+    required this.id,
+    this.responses,
+    required this.description,
+  });
 
   Map<String, Object?> toMap() {
     return {'IdSituation': id, 'Description': description};
   }
 
+  @override
+  String toString() {
+    return 'Situation(id: $id, description: $description, responses: $responses)';
+  }
 }
 
 class Response {
-
   final int id;
-  final int idSituation;
   final Map<Formation, int>? formations;
-  final int type;
+  final ResponseType type;
   final String? description;
 
-  const Response({required this.id, required this.idSituation, this.formations, this.description, required this.type});
-  
+  const Response({
+    required this.id,
+    this.formations,
+    this.description,
+    required this.type,
+  });
+
+  Map<String, Object?> toMap() {
+    return {
+      'IdResponse': id,
+      'Description': description,
+      'IdResponseType':
+          type.id, // Foreign Key relation resolved from the object
+    };
+  }
+
+  @override
+  String toString() {
+    return 'Response(id: $id, description: $description, type: $type, formations: $formations)';
+  }
+}
+
+class ResponseType {
+  final int id;
+  final String label;
+
+  const ResponseType({required this.id, required this.label});
+
+  Map<String, Object?> toMap() {
+    return {'IdResponseType': id, 'Label': label};
+  }
+
+  @override
+  String toString() {
+    return 'ResponseType(id: $id, label: $label)';
+  }
 }
 
 class Formation {
-
   final int id;
-  final String name; 
+  final String name;
   final String description;
+  final List<Level> levels;
 
-  const Formation ({required this.id, required this.name, required this.description});
+  const Formation({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.levels,
+  });
 
-  Map<String, Object?> toMap(){
-    return {'IdFormation' : id, 'Name' : name, 'Description': description};
+  Map<String, Object?> toMap() {
+    return {'IdFormation': id, 'Name': name, 'Description': description};
   }
 
+  @override
+  String toString() {
+    return 'Formation(id: $id, name: $name, description: $description, levels: $levels)';
+  }
 }
 
 class Result {
   final int id;
   final List<Formation> formations;
   final DateTime time;
+  final Category category;
 
-  const Result({required this.id, required this.formations, required this.time});
+  const Result({
+    required this.id,
+    required this.formations,
+    required this.time,
+    required this.category,
+  });
 
+  Map<String, Object?> toMap() {
+    return {
+      'IdResult': id,
+      'Time': time
+          .toIso8601String(), // Formatted safely for SQL text/datetime storage
+      'IdCategory':
+          category.id, // Foreign Key relation resolved from the object
+    };
+  }
+
+  @override
+  String toString() {
+    return 'Result(id: $id, time: $time, category: $category, formations: $formations)';
+  }
 }
 
 class Admin {
@@ -62,8 +130,20 @@ class Admin {
   final String login;
   final String password;
 
-  const Admin({required this.id ,required this.login, required this.password});
+  const Admin({required this.id, required this.login, required this.password});
 
+  Map<String, Object?> toMap() {
+    return {
+      'IdAdmin': id,
+      'Login': login,
+      'Hash': password, // Mapped to match your database schema column
+    };
+  }
+
+  @override
+  String toString() {
+    return 'Admin(id: $id, login: $login, password: $password)';
+  }
 }
 
 class Category {
@@ -71,10 +151,35 @@ class Category {
   final String label;
 
   const Category({required this.id, required this.label});
+
+  Map<String, Object?> toMap() {
+    return {'IdCategory': id, 'Label': label};
+  }
+
+  @override
+  String toString() {
+    return 'Category(id: $id, label: $label)';
+  }
+}
+
+class Level {
+  final int id;
+  final String label;
+
+  const Level({required this.id, required this.label});
+
+  Map<String, Object?> toMap() {
+    return {'IdLevel': id, 'Label': label};
+  }
+
+  @override
+  String toString() {
+    return 'Level(id: $id, label: $label)';
+  }
 }
 
 void main() async {
-    // Avoid errors caused by flutter upgrade.
+  // Avoid errors caused by flutter upgrade.
   // Importing 'package:flutter/widgets.dart' is required.
   WidgetsFlutterBinding.ensureInitialized();
   // Open the database and store the reference.
@@ -85,22 +190,125 @@ void main() async {
     join(await getDatabasesPath(), 'data.db'),
   );
 
-  
-
-  Future<void> insertFormation(Formation formation) async {
-    // Get a reference to the database.
+  //Inserts
+  Future<void> insertAdmin(Admin admin) async {
     final db = await database;
-
-    // Insert the Dog into the correct table. You might also specify the
-    // `conflictAlgorithm` to use in case the same dog is inserted twice.
-    //
-    // In this case, replace any previous data.
     await db.insert(
-      'Formation',
-      formation.toMap(),
+      'Admin',
+      admin.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  // await insertFormation(Formation(id: 1, name: "INFO", description: "La formation est une formation."));
+  Future<void> insertResponseType(ResponseType type) async {
+    final db = await database;
+    await db.insert(
+      'ResponseType',
+      type.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> insertCategory(Category category) async {
+    final db = await database;
+    await db.insert(
+      'Category',
+      category.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> insertLevel(Level level) async {
+    final db = await database;
+    await db.insert(
+      'Level',
+      level.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> insertSituation(Situation situation) async {
+    final db = await database;
+    await db.insert(
+      'Situation',
+      situation.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> insertResponse(Response response, {int? situationId}) async {
+    final db = await database;
+
+    // Use a transaction to ensure all insertions succeed together
+    await db.transaction((txn) async {
+      // 1. Prepare data map and inject the optional Situation foreign key if provided
+      final responseMap = response.toMap();
+      if (situationId != null) {
+        responseMap['IdSituation'] = situationId;
+      }
+
+      // 2. Insert the core Response
+      await txn.insert(
+        'Response',
+        responseMap,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      // 3. Insert relationship pairs into the junction table
+      if (response.formations != null) {
+        for (var entry in response.formations!.entries) {
+          await txn.insert('ResponseFormation', {
+            'IdResponse': response.id,
+            'IdFormation': entry.key.id,
+            'Weight': entry.value, // The map value represents the weight
+          }, conflictAlgorithm: ConflictAlgorithm.replace);
+        }
+      }
+    });
+  }
+
+  Future<void> insertFormation(Formation formation) async {
+    final db = await database;
+
+    await db.transaction((txn) async {
+      // 1. Insert core Formation row
+      await txn.insert(
+        'Formation',
+        formation.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      // 2. Loop and link inside the "Describe" junction table
+      for (var level in formation.levels) {
+        await txn.insert('Describe', {
+          'IdFormation': formation.id,
+          'IdLevel': level.id,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
+  }
+
+  Future<void> insertResult(Result result) async {
+    final db = await database;
+
+    await db.transaction((txn) async {
+      // 1. Insert core Result row (handles Category foreign key automatically)
+      await txn.insert(
+        'Result',
+        result.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      // 2. Loop and link inside the "FormationResult" junction table
+      for (var formation in result.formations) {
+        await txn.insert('FormationResult', {
+          'IdResult': result.id,
+          'IdFormation': formation.id,
+          'ResultWeight': 0, // Fallback default weight assignment
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
+  }
+
+  // await insertFormation(Formation(id: 1, name: "INFO", description: "La formation est une formation.", levels: List.empty()));
 }
