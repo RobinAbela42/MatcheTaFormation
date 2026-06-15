@@ -309,6 +309,17 @@ void main() async {
       }
     });
   }
-
   // await insertFormation(Formation(id: 1, name: "INFO", description: "La formation est une formation.", levels: List.empty()));
+
+  Future<List<Admin>> admins() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('Admin');
+    return List.generate(maps.length, (i) {
+      return Admin(
+        id: maps[i]['IdAdmin'],
+        login: maps[i]['Login'],
+        password: maps[i]['Hash'],
+      );
+    });
+  }
 }
