@@ -12,9 +12,7 @@ class _AdminPageState extends State<AdminPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Page'),
-      ),
+      appBar: AppBar(title: const Text('Admin Page')),
       body: DefaultTabController(
         length: 3,
         child: Column(
@@ -51,13 +49,88 @@ class SituationAdminPage extends StatefulWidget {
 }
 
 class _SituationAdminPageState extends State<SituationAdminPage> {
+  final databaseHelper = DatabaseHelper();
+
   @override
   Widget build(BuildContext context) {
-    return Center(child: Text('Situations Content'));
+    return FutureBuilder<List<Situation>>(
+      future: databaseHelper.getSituations(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('No situations found.'));
+        }
+
+        final situations = snapshot.data!;
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: situations.length,
+          itemBuilder: (context, index) {
+            final s = situations[index];
+            return SituationCard(
+              title: s.description,
+              response1: s.responses?[0].description ?? 'No response 1',
+              response2: s.responses?[1].description ?? 'No response 2',
+              onTap: () {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Tapped')));
+              },
+            );
+          },
+        );
+      },
+    );
   }
 }
 
+class SituationCard extends StatelessWidget {
+  final String title;
+  final String response1;
+  final String response2;
+  final VoidCallback? onTap;
 
+  const SituationCard({
+    super.key,
+    required this.title,
+    required this.response1,
+    required this.response2,
+    this.onTap,
+  });
+  
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.bodyLarge),
+              const SizedBox(height: 8),
+              Text('Response 1: $response1', style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: 4),
+              Text('Response 2: $response2', style: Theme.of(context).textTheme.bodyMedium),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 
 //Formations
@@ -67,32 +140,6 @@ class FormationAdminPage extends StatefulWidget {
   @override
   State<FormationAdminPage> createState() => _FormationAdminPageState();
 }
-
-// class _FormationAdminPageState extends State<FormationAdminPage> {
-//   @override
-//   Widget build(BuildContext context) {
-//     final databaseHelper = DatabaseHelper(); // Fetch formations from the database
-//     final formations = databaseHelper.getFormations(); 
-
-//     return ListView.builder(
-//       padding: const EdgeInsets.all(12),
-//       itemCount: formations.length,
-//       itemBuilder: (context, index) {
-//         final f = formations[index];
-//         return FormationCard(
-//           title: f['title']!,
-//           subtitle: f['subtitle']!,
-//           onTap: () {
-//             // handle tap -- for now show simple snackbar
-//             ScaffoldMessenger.of(context).showSnackBar(
-//               SnackBar(content: Text('Tapped ${f['title']}')),
-//             );
-//           },
-//         );
-//       },
-//     );
-//   }
-// }
 
 class _FormationAdminPageState extends State<FormationAdminPage> {
   // Instantiate the helper once, or manage it via dependency injection/initState
@@ -130,9 +177,9 @@ class _FormationAdminPageState extends State<FormationAdminPage> {
               title: f.name,
               subtitle: f.description,
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Tapped ${f.name}')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Tapped ${f.name}')));
               },
             );
           },
@@ -147,7 +194,12 @@ class FormationCard extends StatelessWidget {
   final String subtitle;
   final VoidCallback? onTap;
 
-  const FormationCard({super.key, required this.title, required this.subtitle, this.onTap});
+  const FormationCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +221,10 @@ class FormationCard extends StatelessWidget {
                   children: [
                     Text(title, style: Theme.of(context).textTheme.bodyLarge),
                     const SizedBox(height: 4),
-                    Text(subtitle, style: Theme.of(context).textTheme.bodyLarge),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                   ],
                 ),
               ),
@@ -196,6 +251,3 @@ class _ResultAdminPageState extends State<ResultAdminPage> {
     return Center(child: Text('Responses Content'));
   }
 }
-
-
-

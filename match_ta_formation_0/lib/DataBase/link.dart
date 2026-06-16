@@ -352,4 +352,35 @@ class DatabaseHelper {
         Formation(id: id, name: name, description: description, levels: [])
     ];
   }
+
+  Future<List<Situation>> getSituations() async {
+    final db = await database;
+    final List<Map<String, Object?>> situationMaps = await db.query('Situation');
+    final List<Map<String, Object?>> responseMaps = await db.query('Response');
+    final List<Map<String, Object?>> formationMaps = await db.query('Formation');
+    final List<Map<String, Object?>> responseTypeMaps = await db.query('ResponseType');
+    final List<Map<String, Object?>> responseFormationMaps = await db.query('ResponseFormation');
+    return [
+      for (final {'IdSituation': id as int, 'Description': description as String} in situationMaps)
+        Situation(id: id, description: description, responses: [
+          for (final {'IdResponse': responseId as int, 'Description': responseDescription as String, 'IdResponseType': typeId as int} in responseMaps.where((r) => r['IdSituation'] == id))
+            Response(
+              id: responseId,
+              description: responseDescription,
+              type: ResponseType(id: typeId, label: responseTypeMaps.firstWhere((rt) => rt['IdResponseType'] == typeId)['Label'] as String), // Fetch the actual label
+              formations:
+                <Formation, int>{
+                  for (final {'IdFormation': formationId as int} in responseFormationMaps.where((rf) => rf['IdResponse'] == responseId))
+                    Formation(
+                      id: formationId,
+                      name: formationMaps.firstWhere((f) => f['IdFormation'] == formationId)['Name'] as String,
+                      description: formationMaps.firstWhere((f) => f['IdFormation'] == formationId)['Description'] as String,
+                      levels: [],
+                    ): responseFormationMaps.firstWhere((rf) => rf['IdResponse'] == responseId && rf['IdFormation'] == formationId)['Weight'] as int,
+                },
+                    
+            )
+        ])
+    ];
+  }
 }
