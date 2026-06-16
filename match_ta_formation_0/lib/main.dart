@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'Pages/Admin/adminLogin.dart';
+import 'Pages/User/UserPage.dart';
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'dart:io';
+
 void main() {
-  
-    WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
 
   // 3. Initialize sqflite for Desktop platforms
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
@@ -16,8 +17,10 @@ void main() {
     databaseFactory = databaseFactoryFfi;
   }
   runApp(const MyApp());
-
 }
+
+// Currently, this is the level of formations the user will face during this session. It will be updated after choosing it when choosing the level at the begining of the session.
+int currentSessionLevel = 0;
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -43,7 +46,9 @@ class MyApp extends StatelessWidget {
         //
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: const Color.fromARGB(255, 255, 43, 131)),
+        colorScheme: .fromSeed(
+          seedColor: const Color.fromARGB(255, 255, 43, 131),
+        ),
       ),
       home: const MyHomePage(title: 'Matche ta formation !'),
     );
@@ -69,8 +74,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
-
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -109,14 +112,9 @@ class _MyHomePageState extends State<MyHomePage> {
           // action in the IDE, or press "p" in the console), to see the
           // wireframe for each widget.
           mainAxisAlignment: .center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-          ],
+          children: <Widget>[UserPage()],
         ),
       ),
-
     );
   }
 }
