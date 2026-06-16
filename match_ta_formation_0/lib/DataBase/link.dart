@@ -1,15 +1,17 @@
 /// link.dart is the main file to  link the database to the app.
 
 import 'dart:async';
-import 'dart:developer' as developer;
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
+// import 'dart:developer' as developer;
+// import 'package:flutter/material.dart';
+// import 'package:flutter/services.dart';
+// import 'package:flutter/widgets.dart';
+// import 'package:match_ta_formation_0/main.dart';
+// import 'dart:io';
+
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-
-import 'dart:io';
 
 
 
@@ -133,21 +135,21 @@ class Result {
 class Admin {
   final int id;
   final String login;
-  final String password;
+  final String hash;
 
-  const Admin({required this.id, required this.login, required this.password});
+  const Admin({required this.id, required this.login, required this.hash});
 
   Map<String, Object?> toMap() {
     return {
       'IdAdmin': id,
       'Login': login,
-      'Hash': password, // Mapped to match your database schema column
+      'Hash': hash, // Mapped to match your database schema column
     };
   }
 
   @override
   String toString() {
-    return 'Admin(id: $id, login: $login, password: $password)';
+    return 'Admin(id: $id, login: $login, hash: $hash)';
   }
 }
 
@@ -183,17 +185,34 @@ class Level {
   }
 }
 
-void main() async {
-  // Avoid errors caused by flutter upgrade.
-  // Importing 'package:flutter/widgets.dart' is required.
-  WidgetsFlutterBinding.ensureInitialized();
-  // Open the database and store the reference.
-  // Initialize sqflite FFI on desktop platforms before opening the DB.
+// void main() async {
+//   // Avoid errors caused by flutter upgrade.
+//   // Importing 'package:flutter/widgets.dart' is required.
+//   WidgetsFlutterBinding.ensureInitialized();
+//   // Open the database and store the reference.
+//   // Initialize sqflite FFI on desktop platforms before opening the DB.
 
-  final databasePath = join(await getDatabasesPath(), 'data.db');
-  final database = openDatabase(databasePath);
+//   final databasePath = join(await getDatabasesPath(), 'data.db');
+//   final database = openDatabase(databasePath);
 
-  //Inserts
+// }
+
+
+void main() {
+  // 2. Ensure binding is initialized
+
+// Your main App widget
+}
+
+class DatabaseHelper {
+
+  static Future<Database> get database async {
+    final databasePath = join(await getDatabasesPath(), 'data.db');
+    return openDatabase(databasePath);
+  }
+
+//Inserts
+
   Future<void> insertAdmin(Admin admin) async {
     final db = await database;
     await db.insert(
@@ -314,14 +333,23 @@ void main() async {
   }
   // await insertFormation(Formation(id: 1, name: "INFO", description: "La formation est une formation.", levels: List.empty()));
 
-  Future<List<Admin>> admins() async {
+//Gets 
+  Future<List<Admin>> getAdmins() async {
     final db = await database;
     final List<Map<String, Object?>> adminMaps = await db.query('Admin');
     return [
-      for (final {'IdAdmin': id as int, 'Login': login as String, 'Hash': password as String} in adminMaps)
-        Admin(id: id, login: login, password: password)
+      for (final {'IdAdmin': id as int, 'Login': login as String, 'Hash': hash as String} in adminMaps)
+        Admin(id: id, login: login, hash: hash)
     ];
   }  
-  developer.log('admins', name : 'Admins', error: await admins());
 
+
+  Future<List<Formation>> getFormations() async {
+    final db = await database;
+    final List<Map<String, Object?>> formationMaps = await db.query('Formation');
+    return [
+      for (final {'IdFormation': id as int, 'Name': name as String, 'Description': description as String} in formationMaps)
+        Formation(id: id, name: name, description: description, levels: [])
+    ];
+  }
 }

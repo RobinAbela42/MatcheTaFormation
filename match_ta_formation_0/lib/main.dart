@@ -1,8 +1,22 @@
 import 'package:flutter/material.dart';
 import 'Pages/Admin/AdminLogin.dart';
 
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+import 'dart:io';
 void main() {
+  
+    WidgetsFlutterBinding.ensureInitialized();
+
+  // 3. Initialize sqflite for Desktop platforms
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    // Initialize FFI
+    sqfliteFfiInit();
+    // Change the global database factory
+    databaseFactory = databaseFactoryFfi;
+  }
   runApp(const MyApp());
+
 }
 
 class MyApp extends StatelessWidget {

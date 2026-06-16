@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:match_ta_formation_0/DataBase/link.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({Key? key}) : super(key: key);
@@ -67,25 +68,72 @@ class FormationAdminPage extends StatefulWidget {
   State<FormationAdminPage> createState() => _FormationAdminPageState();
 }
 
+// class _FormationAdminPageState extends State<FormationAdminPage> {
+//   @override
+//   Widget build(BuildContext context) {
+//     final databaseHelper = DatabaseHelper(); // Fetch formations from the database
+//     final formations = databaseHelper.getFormations(); 
+
+//     return ListView.builder(
+//       padding: const EdgeInsets.all(12),
+//       itemCount: formations.length,
+//       itemBuilder: (context, index) {
+//         final f = formations[index];
+//         return FormationCard(
+//           title: f['title']!,
+//           subtitle: f['subtitle']!,
+//           onTap: () {
+//             // handle tap -- for now show simple snackbar
+//             ScaffoldMessenger.of(context).showSnackBar(
+//               SnackBar(content: Text('Tapped ${f['title']}')),
+//             );
+//           },
+//         );
+//       },
+//     );
+//   }
+// }
+
 class _FormationAdminPageState extends State<FormationAdminPage> {
+  // Instantiate the helper once, or manage it via dependency injection/initState
+  final databaseHelper = DatabaseHelper();
+
   @override
   Widget build(BuildContext context) {
-    final formations = [
-      {'title': 'Example', 'subtitle': 'example de formation'},
-    ];
+    return FutureBuilder<List<Formation>>(
+      future: databaseHelper.getFormations(), // The async function
+      builder: (context, snapshot) {
+        // 1. Handle the loading state
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: formations.length,
-      itemBuilder: (context, index) {
-        final f = formations[index];
-        return FormationCard(
-          title: f['title']!,
-          subtitle: f['subtitle']!,
-          onTap: () {
-            // handle tap -- for now show simple snackbar
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Tapped ${f['title']}')),
+        // 2. Handle errors if the database call fails
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        // 3. Handle the case where data is empty or missing
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('No formations found.'));
+        }
+
+        // 4. Data is safely available here
+        final formations = snapshot.data!;
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: formations.length,
+          itemBuilder: (context, index) {
+            final f = formations[index];
+            return FormationCard(
+              title: f.name,
+              subtitle: f.description,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Tapped ${f.name}')),
+                );
+              },
             );
           },
         );

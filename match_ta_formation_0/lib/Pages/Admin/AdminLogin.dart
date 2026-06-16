@@ -63,16 +63,16 @@ class _AdminLoginState extends State<AdminLogin> {
             ElevatedButton(
               onPressed: () async {
                 // Handle login logic here
-                // final List<Admin> adminList = await admins();
-                //   for (var admin in adminList) {
-                //   if (_usernameController.text == admin.login && _passwordController.text == admin.password) {
-                //     Navigator.push(
-                //       context,
-                //       MaterialPageRoute(builder: (context) => const AdminPage()),
-                //     );
-                //     return; // Exit the loop if a match is found
-                //   }
-                // }
+                final List<Admin> adminList = await DatabaseHelper().getAdmins();
+                  for (var admin in adminList) {
+                  if (_usernameController.text == admin.login && _passwordController.text == admin.hash) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AdminPage()),
+                    );
+                    return; // Exit the loop if a match is found
+                  }
+                }
                 if (_usernameController.text == 'admin' && _passwordController.text == 'password') {
                   Navigator.push(
                     context,
