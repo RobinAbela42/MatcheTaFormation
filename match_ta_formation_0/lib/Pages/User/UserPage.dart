@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:match_ta_formation_0/DataBase/link.dart';
 
 class UserPage extends StatefulWidget {
   const UserPage({Key? key}) : super(key: key);
@@ -8,22 +9,23 @@ class UserPage extends StatefulWidget {
 }
 
 class _UserPageState extends State<UserPage> {
+  List<Response> responses = [];
+
   @override
   Widget build(BuildContext context) {
-    return SwipeCard(child: Text('This is a swipe card.'));
+    return SwipeCard( width: 600, height: 800,child: Text('This is a swipe card.'));
   }
 }
 
-
-
 class SwipeCard extends StatefulWidget {
   final Widget? child;
+  final Situation? situation;
   final double width;
   final double height;
 
-  const SwipeCard({Key? key, this.child, this.width = 320, this.height = 480})
+  const SwipeCard({Key? key, this.child, this.width = 320, this.height = 480, this.situation})
     : super(key: key);
-	
+
   @override
   State<SwipeCard> createState() => _SwipeCardState();
 }
@@ -65,32 +67,50 @@ class _SwipeCardState extends State<SwipeCard>
     _controller.forward(from: 0);
   }
 
+  void _runSwipeAnimation(Offset endOffset) {
+    _animation = Tween<Offset>(
+      begin: _offset,
+      end: endOffset,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _controller.forward(from: 0);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
-		
       child: GestureDetector(
         onPanUpdate: (details) {
           setState(() {
-            // Optional: Add rotation based on horizontal drag
             _offset += details.delta;
+
           });
         },
         onPanEnd: (details) {
-          _runResetAnimation();
+
+          if (_offset.dx.abs() > 300) {
+            // If the card is swiped far enough, you can implement logic to remove it or perform an action.
+            // For now, we'll just reset it back to the center.
+            _runSwipeAnimation(Offset(_offset.dx.sign * 900, 0));
+            
+          } else {
+            _runResetAnimation();
+          }
         },
         child: Transform.translate(
           offset: _offset,
-          child: Card(
-            elevation: 8,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Container(
-              width: widget.width,
-              height: widget.height,
-              padding: EdgeInsets.all(16),
-              child: widget.child ?? _defaultContent(),
+          child: Transform.rotate(
+            angle: _offset.dx / 1000,
+            child: Card(
+              elevation: 8,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                width: widget.width,
+                height: widget.height,
+                padding: EdgeInsets.all(16),
+                child: widget.child ?? _defaultContent(),
+              ),
             ),
           ),
         ),

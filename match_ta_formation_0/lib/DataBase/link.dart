@@ -13,8 +13,6 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-
-
 class Situation {
   final int id;
   final List<Response>? responses;
@@ -197,21 +195,19 @@ class Level {
 
 // }
 
-
 void main() {
   // 2. Ensure binding is initialized
 
-// Your main App widget
+  // Your main App widget
 }
 
 class DatabaseHelper {
-
   static Future<Database> get database async {
     final databasePath = join(await getDatabasesPath(), 'data.db');
     return openDatabase(databasePath);
   }
 
-//Inserts
+  //Inserts
 
   Future<void> insertAdmin(Admin admin) async {
     final db = await database;
@@ -331,56 +327,146 @@ class DatabaseHelper {
       }
     });
   }
-  // await insertFormation(Formation(id: 1, name: "INFO", description: "La formation est une formation.", levels: List.empty()));
 
-//Gets 
+  Future<void> updateFormation(Formation formation) async {
+    final db = await database;
+
+    await db.transaction((txn) async {
+      // 1. Update the core Formation details
+      await txn.update(
+        'Formation',
+        formation.toMap(),
+        where: 'IdFormation = ?',
+        whereArgs: [formation.id],
+      );
+
+      // 2. Clear existing level links in the "Describe" junction table
+      await txn.delete(
+        'Describe',
+        where: 'IdFormation = ?',
+        whereArgs: [formation.id],
+      );
+
+      // 3. Re-insert updated level links
+      for (var level in formation.levels) {
+        await txn.insert('Describe', {
+          'IdFormation': formation.id,
+          'IdLevel': level.id,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
+  }
+
+  //Gets
   Future<List<Admin>> getAdmins() async {
     final db = await database;
     final List<Map<String, Object?>> adminMaps = await db.query('Admin');
     return [
-      for (final {'IdAdmin': id as int, 'Login': login as String, 'Hash': hash as String} in adminMaps)
-        Admin(id: id, login: login, hash: hash)
+      for (final {
+            'IdAdmin': id as int,
+            'Login': login as String,
+            'Hash': hash as String,
+          }
+          in adminMaps)
+        Admin(id: id, login: login, hash: hash),
     ];
-  }  
+  }
 
+  Future<List<Level>> getLevels() async {
+    final db = await database;
+    final List<Map<String, Object?>> levelMaps = await db.query('Level');
+    return [
+      for (final {'IdLevel': id as int, 'Label': label as String} in levelMaps)
+        Level(id: id, label: label),
+    ];
+  }
 
   Future<List<Formation>> getFormations() async {
     final db = await database;
-    final List<Map<String, Object?>> formationMaps = await db.query('Formation');
+    final List<Map<String, Object?>> formationMaps = await db.query(
+      'Formation',
+    );
     return [
-      for (final {'IdFormation': id as int, 'Name': name as String, 'Description': description as String} in formationMaps)
-        Formation(id: id, name: name, description: description, levels: [])
+      for (final {
+            'IdFormation': id as int,
+            'Name': name as String,
+            'Description': description as String,
+          }
+          in formationMaps)
+        Formation(id: id, name: name, description: description, levels: []),
     ];
   }
 
   Future<List<Situation>> getSituations() async {
     final db = await database;
-    final List<Map<String, Object?>> situationMaps = await db.query('Situation');
+    final List<Map<String, Object?>> situationMaps = await db.query(
+      'Situation',
+    );
     final List<Map<String, Object?>> responseMaps = await db.query('Response');
-    final List<Map<String, Object?>> formationMaps = await db.query('Formation');
-    final List<Map<String, Object?>> responseTypeMaps = await db.query('ResponseType');
-    final List<Map<String, Object?>> responseFormationMaps = await db.query('ResponseFormation');
+    final List<Map<String, Object?>> formationMaps = await db.query(
+      'Formation',
+    );
+    final List<Map<String, Object?>> responseTypeMaps = await db.query(
+      'ResponseType',
+    );
+    final List<Map<String, Object?>> responseFormationMaps = await db.query(
+      'ResponseFormation',
+    );
     return [
-      for (final {'IdSituation': id as int, 'Description': description as String} in situationMaps)
-        Situation(id: id, description: description, responses: [
-          for (final {'IdResponse': responseId as int, 'Description': responseDescription as String, 'IdResponseType': typeId as int} in responseMaps.where((r) => r['IdSituation'] == id))
-            Response(
-              id: responseId,
-              description: responseDescription,
-              type: ResponseType(id: typeId, label: responseTypeMaps.firstWhere((rt) => rt['IdResponseType'] == typeId)['Label'] as String), // Fetch the actual label
-              formations:
-                <Formation, int>{
-                  for (final {'IdFormation': formationId as int} in responseFormationMaps.where((rf) => rf['IdResponse'] == responseId))
+      for (final {
+            'IdSituation': id as int,
+            'Description': description as String,
+          }
+          in situationMaps)
+        Situation(
+          id: id,
+          description: description,
+          responses: [
+            for (final {
+                  'IdResponse': responseId as int,
+                  'Description': responseDescription as String,
+                  'IdResponseType': typeId as int,
+                }
+                in responseMaps.where((r) => r['IdSituation'] == id))
+              Response(
+                id: responseId,
+                description: responseDescription,
+                type: ResponseType(
+                  id: typeId,
+                  label:
+                      responseTypeMaps.firstWhere(
+                            (rt) => rt['IdResponseType'] == typeId,
+                          )['Label']
+                          as String,
+                ), // Fetch the actual label
+                formations: <Formation, int>{
+                  for (final {'IdFormation': formationId as int}
+                      in responseFormationMaps.where(
+                        (rf) => rf['IdResponse'] == responseId,
+                      ))
                     Formation(
                       id: formationId,
-                      name: formationMaps.firstWhere((f) => f['IdFormation'] == formationId)['Name'] as String,
-                      description: formationMaps.firstWhere((f) => f['IdFormation'] == formationId)['Description'] as String,
+                      name:
+                          formationMaps.firstWhere(
+                                (f) => f['IdFormation'] == formationId,
+                              )['Name']
+                              as String,
+                      description:
+                          formationMaps.firstWhere(
+                                (f) => f['IdFormation'] == formationId,
+                              )['Description']
+                              as String,
                       levels: [],
-                    ): responseFormationMaps.firstWhere((rf) => rf['IdResponse'] == responseId && rf['IdFormation'] == formationId)['Weight'] as int,
+                    ): responseFormationMaps.firstWhere(
+                          (rf) =>
+                              rf['IdResponse'] == responseId &&
+                              rf['IdFormation'] == formationId,
+                        )['Weight']
+                        as int,
                 },
-                    
-            )
-        ])
+              ),
+          ],
+        ),
     ];
   }
 }

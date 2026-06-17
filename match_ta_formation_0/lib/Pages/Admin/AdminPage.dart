@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:match_ta_formation_0/Pages/Admin/formationAdminPage.dart';
 import 'package:match_ta_formation_0/DataBase/link.dart';
 
 class AdminPage extends StatefulWidget {
@@ -144,9 +145,17 @@ class FormationAdminPage extends StatefulWidget {
 class _FormationAdminPageState extends State<FormationAdminPage> {
   // Instantiate the helper once, or manage it via dependency injection/initState
   final databaseHelper = DatabaseHelper();
+  Formation? _selectedFormation;
 
   @override
   Widget build(BuildContext context) {
+    if (_selectedFormation != null) {
+      return FormationEdit(
+        formation: _selectedFormation!,
+        onClose: () => setState(() => _selectedFormation = null),
+      );
+    }
+
     return FutureBuilder<List<Formation>>(
       future: databaseHelper.getFormations(), // The async function
       builder: (context, snapshot) {
@@ -177,9 +186,9 @@ class _FormationAdminPageState extends State<FormationAdminPage> {
               title: f.name,
               subtitle: f.description,
               onTap: () {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Tapped ${f.name}')));
+                setState(() {
+                  _selectedFormation = f;
+                });
               },
             );
           },
