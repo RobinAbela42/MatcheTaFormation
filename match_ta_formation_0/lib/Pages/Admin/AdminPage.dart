@@ -146,6 +146,7 @@ class _FormationAdminPageState extends State<FormationAdminPage> {
   // Instantiate the helper once, or manage it via dependency injection/initState
   final databaseHelper = DatabaseHelper();
   Formation? _selectedFormation;
+  bool _isAddingFormation = false;
 
   @override
   Widget build(BuildContext context) {
@@ -153,6 +154,12 @@ class _FormationAdminPageState extends State<FormationAdminPage> {
       return FormationEdit(
         formation: _selectedFormation!,
         onClose: () => setState(() => _selectedFormation = null),
+      );
+    }
+
+    if (_isAddingFormation) {
+      return FormationAdd(
+        onClose: () => setState(() => _isAddingFormation = false),
       );
     }
 
@@ -177,21 +184,39 @@ class _FormationAdminPageState extends State<FormationAdminPage> {
         // 4. Data is safely available here
         final formations = snapshot.data!;
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: formations.length,
-          itemBuilder: (context, index) {
-            final f = formations[index];
-            return FormationCard(
-              title: f.name,
-              subtitle: f.description,
-              onTap: () {
-                setState(() {
-                  _selectedFormation = f;
-                });
-              },
-            );
-          },
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _isAddingFormation = true;
+                  });
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Add Formation'),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: formations.length,
+                itemBuilder: (context, index) {
+                  final f = formations[index];
+                  return FormationCard(
+                    title: f.name,
+                    subtitle: f.description,
+                    onTap: () {
+                      setState(() {
+                        _selectedFormation = f;
+                      });
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );

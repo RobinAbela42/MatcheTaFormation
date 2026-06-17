@@ -79,13 +79,13 @@ class ResponseType {
 }
 
 class Formation {
-  final int id;
+  final int? id;
   final String name;
   final String description;
   final List<Level> levels;
 
   const Formation({
-    required this.id,
+    this.id,
     required this.name,
     required this.description,
     required this.levels,
@@ -393,7 +393,24 @@ class DatabaseHelper {
             'Description': description as String,
           }
           in formationMaps)
-        Formation(id: id, name: name, description: description, levels: []),
+        Formation(id: id, name: name, description: description, levels: [
+          for (final {
+                'IdLevel': levelId as int,
+                'Label': levelLabel as String,
+              }
+              in await db.query(
+                'Describe',
+                where: 'IdFormation = ?',
+                whereArgs: [id],
+                columns: ['IdLevel'],
+              ).then((describeMaps) => describeMaps.map((dm) => dm['IdLevel'] as int).toList())
+                  .then((levelIds) => db.query(
+                        'Level',
+                        where: 'IdLevel IN (${List.filled(levelIds.length, '?').join(',')})',
+                        whereArgs: levelIds,
+                      )))
+            Level(id: levelId, label: levelLabel),
+        ]),
     ];
   }
 
