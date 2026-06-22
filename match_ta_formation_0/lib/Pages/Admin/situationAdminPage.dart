@@ -128,14 +128,24 @@ class _SituationEditState extends State<SituationEdit> {
                                 },
                               ),
                             )
-                            .toList() ??
-                        [],
+                            .toList() ??[],
                       ),
                     ],
                   ],
                 ),
               ),
             ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              //Update formation in the database
+              DatabaseHelper().updateSituation(widget.situation);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Situation edited successfuly')),
+              );
+            },
+            child: const Text('Save'),
           ),
         ],
       ),
@@ -177,11 +187,5 @@ class SituationFormationCard extends StatelessWidget {
         ),
       ),
     );
-
-    // IconButton(
-    //   onPressed: onDelete,S
-    //   icon: const Icon(Icons.delete),
-    //   tooltip: 'Delete',
-    // ),
   }
 }

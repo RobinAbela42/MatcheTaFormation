@@ -254,35 +254,38 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> insertResponse(Response response, {int? situationId}) async {
-    final db = await database;
+  // Accept a DatabaseExecutor. If none is provided, fallback to the main db.
+  Future<void> insertResponse(
+    Response response, {
+    int? situationId,
+    DatabaseExecutor? executor,
+  }) async {
+    // Use the passed transaction, or fallback to the standard db instance
+    final client = executor ?? await database;
 
-    // Use a transaction to ensure all insertions succeed together
-    await db.transaction((txn) async {
-      // 1. Prepare data map and inject the optional Situation foreign key if provided
-      final responseMap = response.toMap();
-      if (situationId != null) {
-        responseMap['IdSituation'] = situationId;
+    // 1. Prepare data map
+    final responseMap = response.toMap();
+    if (situationId != null) {
+      responseMap['IdSituation'] = situationId;
+    }
+
+    // 2. Insert the core Response
+    await client.insert(
+      'Response',
+      responseMap,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    // 3. Insert relationship pairs into the junction table
+    if (response.formations != null) {
+      for (var entry in response.formations!.entries) {
+        await client.insert('ResponseFormation', {
+          'IdResponse': response.id,
+          'IdFormation': entry.key.id,
+          'Weight': entry.value,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
-
-      // 2. Insert the core Response
-      await txn.insert(
-        'Response',
-        responseMap,
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-
-      // 3. Insert relationship pairs into the junction table
-      if (response.formations != null) {
-        for (var entry in response.formations!.entries) {
-          await txn.insert('ResponseFormation', {
-            'IdResponse': response.id,
-            'IdFormation': entry.key.id,
-            'Weight': entry.value, // The map value represents the weight
-          }, conflictAlgorithm: ConflictAlgorithm.replace);
-        }
-      }
-    });
+    }
   }
 
   Future<void> insertFormation(Formation formation) async {
@@ -328,6 +331,39 @@ class DatabaseHelper {
     });
   }
 
+  Future<void> updateSituation(Situation situation) async {
+    final db = await database;
+
+    // 1. Open the top-level transaction
+    await db.transaction((txn) async {
+      // Update the core Situation details
+      await txn.update(
+        'Situation',
+        situation.toMap(),
+        where: 'IdSituation = ?',
+        whereArgs: [situation.id],
+      );
+
+      // Clear existing responses
+      await txn.delete(
+        'Response',
+        where: 'IdSituation = ?',
+        whereArgs: [situation.id],
+      );
+
+      // Re-insert updated responses (PASSING THE TXN OBJECT)
+      if (situation.responses != null) {
+        for (var response in situation.responses!) {
+          await updateResponse(
+            response,
+            situationId: situation.id,
+            executor: txn,
+          );
+        }
+      }
+    });
+  }
+
   Future<void> updateFormation(Formation formation) async {
     final db = await database;
 
@@ -355,6 +391,42 @@ class DatabaseHelper {
         }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
     });
+  }
+
+  Future<void> updateResponse(Response response, {int? situationId,DatabaseExecutor? executor,}) async {
+    final client = executor ?? await database;
+
+    // 1. Prepare data map
+    final responseMap = response.toMap();
+    if (situationId != null) {
+      responseMap['IdSituation'] = situationId;
+    }
+
+    // 1. Update the core Response details
+    await client.update(
+      'Response',
+      response.toMap(),
+      where: 'IdResponse = ?',
+      whereArgs: [response.id],
+    );
+
+    // 2. Clear existing formation links in the "ResponseFormation" junction table
+    await client.delete(
+      'ResponseFormation',
+      where: 'IdResponse = ?',
+      whereArgs: [response.id],
+    );
+
+    // 3. Re-insert updated formation links
+    if (response.formations != null) {
+      for (var entry in response.formations!.entries) {
+        await client.insert('ResponseFormation', {
+          'IdResponse': response.id,
+          'IdFormation': entry.key.id,
+          'Weight': entry.value,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    }
   }
 
   //Gets
@@ -393,24 +465,38 @@ class DatabaseHelper {
             'Description': description as String,
           }
           in formationMaps)
-        Formation(id: id, name: name, description: description, levels: [
-          for (final {
-                'IdLevel': levelId as int,
-                'Label': levelLabel as String,
-              }
-              in await db.query(
-                'Describe',
-                where: 'IdFormation = ?',
-                whereArgs: [id],
-                columns: ['IdLevel'],
-              ).then((describeMaps) => describeMaps.map((dm) => dm['IdLevel'] as int).toList())
-                  .then((levelIds) => db.query(
+        Formation(
+          id: id,
+          name: name,
+          description: description,
+          levels: [
+            for (final {
+                  'IdLevel': levelId as int,
+                  'Label': levelLabel as String,
+                }
+                in await db
+                    .query(
+                      'Describe',
+                      where: 'IdFormation = ?',
+                      whereArgs: [id],
+                      columns: ['IdLevel'],
+                    )
+                    .then(
+                      (describeMaps) => describeMaps
+                          .map((dm) => dm['IdLevel'] as int)
+                          .toList(),
+                    )
+                    .then(
+                      (levelIds) => db.query(
                         'Level',
-                        where: 'IdLevel IN (${List.filled(levelIds.length, '?').join(',')})',
+                        where:
+                            'IdLevel IN (${List.filled(levelIds.length, '?').join(',')})',
                         whereArgs: levelIds,
-                      )))
-            Level(id: levelId, label: levelLabel),
-        ]),
+                      ),
+                    ))
+              Level(id: levelId, label: levelLabel),
+          ],
+        ),
     ];
   }
 
@@ -485,5 +571,17 @@ class DatabaseHelper {
           ],
         ),
     ];
+  }
+
+  Future<void> deleteFormation(Formation formation) async {
+    final db = await database;
+
+    await db.transaction((txn) async {
+      txn.delete(
+        'Formation',
+        where: 'Formation = ?',
+        whereArgs: [formation.id],
+      );
+    });
   }
 }
