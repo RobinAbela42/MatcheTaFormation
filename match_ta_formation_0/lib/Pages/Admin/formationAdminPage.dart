@@ -62,7 +62,7 @@ class _FormationEditState extends State<FormationEdit> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Edit Formation',
+                'Modifier la formation',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ],
@@ -71,7 +71,7 @@ class _FormationEditState extends State<FormationEdit> {
           TextField(
             controller: _nameController,
             decoration: const InputDecoration(
-              labelText: 'Formation name',
+              labelText: 'Nom de la formation',
               border: OutlineInputBorder(),
             ),
           ),
@@ -183,7 +183,7 @@ class _FormationAddState extends State<FormationAdd> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Add Formation',
+                'Ajouter une formation',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ],
@@ -192,7 +192,7 @@ class _FormationAddState extends State<FormationAdd> {
           TextField(
             controller: _nameController,
             decoration: const InputDecoration(
-              labelText: 'Formation name',
+              labelText: 'Nom de la formation',
               border: OutlineInputBorder(),
             ),
           ),

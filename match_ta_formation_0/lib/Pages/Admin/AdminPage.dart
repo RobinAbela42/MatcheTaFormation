@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:match_ta_formation_0/Pages/Admin/formationAdminPage.dart';
 import 'package:match_ta_formation_0/DataBase/link.dart';
+import 'package:match_ta_formation_0/Pages/Admin/situationAdminPage.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({Key? key}) : super(key: key);
@@ -51,6 +52,8 @@ class SituationAdminPage extends StatefulWidget {
 
 class _SituationAdminPageState extends State<SituationAdminPage> {
   final databaseHelper = DatabaseHelper();
+  Situation? _selectedSituation;
+  bool _isAddingSituation = false;
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +72,14 @@ class _SituationAdminPageState extends State<SituationAdminPage> {
           return const Center(child: Text('No situations found.'));
         }
 
+        if (_selectedSituation != null) {
+          return SituationEdit(
+            situation: _selectedSituation!,
+            onClose: () => setState(() => _selectedSituation = null),
+          );
+        }
+
+
         final situations = snapshot.data!;
 
         return ListView.builder(
@@ -81,9 +92,9 @@ class _SituationAdminPageState extends State<SituationAdminPage> {
               response1: s.responses?[0].description ?? 'No response 1',
               response2: s.responses?[1].description ?? 'No response 2',
               onTap: () {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Tapped')));
+                setState(() {
+                  _selectedSituation = s;
+                });
               },
             );
           },
@@ -282,6 +293,6 @@ class ResultAdminPage extends StatefulWidget {
 class _ResultAdminPageState extends State<ResultAdminPage> {
   @override
   Widget build(BuildContext context) {
-    return Center(child: Text('Responses Content'));
+    return Center(child: Text('Resultats content'));
   }
 }
