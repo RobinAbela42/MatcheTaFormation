@@ -18,6 +18,7 @@ class SituationEdit extends StatefulWidget {
 class _SituationEditState extends State<SituationEdit> {
   late final TextEditingController _descriptionController;
   late final List<TextEditingController> _responseControllers;
+  late final Response? _isEditingResponsesFormation;
 
   @override
   void initState() {
@@ -100,6 +101,9 @@ class _SituationEditState extends State<SituationEdit> {
                       ),
                     ),
                     const SizedBox(height: 8),
+
+
+
                     if (widget
                             .situation
                             .responses?[index]
@@ -110,25 +114,40 @@ class _SituationEditState extends State<SituationEdit> {
                         'Formations:',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _isEditingResponsesFormation =
+                              widget.situation.responses?[index];
+                        });
+                      },
+                      child: Icon(Icons.add),
+                    ),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: widget
-                            .situation
-                            .responses?[index]
-                            .formations
-                            ?.entries
-                            .map(
-                              (entry) => SituationFormationCard(
-                                text: entry.key.name,
-                                onDelete: () {
-                                  setState(() {
-                                    widget.situation.responses?[index].formations?.remove(entry.key);
-                                  });
-                                },
-                              ),
-                            )
-                            .toList() ??[],
+                        children:
+                            widget
+                                .situation
+                                .responses?[index]
+                                .formations
+                                ?.entries
+                                .map(
+                                  (entry) => SituationFormationCard(
+                                    text: entry.key.name,
+                                    onDelete: () {
+                                      setState(() {
+                                        widget
+                                            .situation
+                                            .responses?[index]
+                                            .formations
+                                            ?.remove(entry.key);
+                                      });
+                                    },
+                                  ),
+                                )
+                                .toList() ??
+                            [],
                       ),
                     ],
                   ],
@@ -139,18 +158,16 @@ class _SituationEditState extends State<SituationEdit> {
           ElevatedButton(
             onPressed: () {
               final responses = widget.situation.responses;
-              final updatedResponses = responses?.asMap().entries.map(
-                (entry) {
-                  final index = entry.key;
-                  final response = entry.value;
-                  return Response(
-                    id: response.id,
-                    type: response.type,
-                    description: _responseControllers[index].text,
-                    formations: response.formations,
-                  );
-                },
-              ).toList();
+              final updatedResponses = responses?.asMap().entries.map((entry) {
+                final index = entry.key;
+                final response = entry.value;
+                return Response(
+                  id: response.id,
+                  type: response.type,
+                  description: _responseControllers[index].text,
+                  formations: response.formations,
+                );
+              }).toList();
 
               DatabaseHelper().updateSituation(
                 Situation(
@@ -208,5 +225,3 @@ class SituationFormationCard extends StatelessWidget {
     );
   }
 }
-
-
