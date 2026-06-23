@@ -9,6 +9,7 @@ import 'dart:async';
 // import 'package:match_ta_formation_0/main.dart';
 // import 'dart:io';
 
+import 'package:flutter/semantics.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -334,9 +335,8 @@ class DatabaseHelper {
   Future<void> updateSituation(Situation situation) async {
     final db = await database;
 
-    // 1. Open the top-level transaction
     await db.transaction((txn) async {
-      // Update the core Situation details
+      // 1. Update the core Situation row
       await txn.update(
         'Situation',
         situation.toMap(),
@@ -344,17 +344,23 @@ class DatabaseHelper {
         whereArgs: [situation.id],
       );
 
-      // Clear existing responses
+      // 2. Remove any existing response links for this situation
+      await txn.execute(
+        'DELETE FROM ResponseFormation WHERE IdResponse IN (SELECT IdResponse FROM Response WHERE IdSituation = ?)',
+        [situation.id],
+      );
+
+      // 3. Remove the old responses for this situation
       await txn.delete(
         'Response',
         where: 'IdSituation = ?',
         whereArgs: [situation.id],
       );
 
-      // Re-insert updated responses (PASSING THE TXN OBJECT)
+      // 4. Insert the new response set for this situation
       if (situation.responses != null) {
-        for (var response in situation.responses!) {
-          await updateResponse(
+        for (final response in situation.responses!) {
+          await insertResponse(
             response,
             situationId: situation.id,
             executor: txn,

@@ -138,8 +138,27 @@ class _SituationEditState extends State<SituationEdit> {
           ),
           ElevatedButton(
             onPressed: () {
-              //Update formation in the database
-              DatabaseHelper().updateSituation(widget.situation);
+              final responses = widget.situation.responses;
+              final updatedResponses = responses?.asMap().entries.map(
+                (entry) {
+                  final index = entry.key;
+                  final response = entry.value;
+                  return Response(
+                    id: response.id,
+                    type: response.type,
+                    description: _responseControllers[index].text,
+                    formations: response.formations,
+                  );
+                },
+              ).toList();
+
+              DatabaseHelper().updateSituation(
+                Situation(
+                  id: widget.situation.id,
+                  description: _descriptionController.text,
+                  responses: updatedResponses ?? responses,
+                ),
+              );
 
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Situation edited successfuly')),
@@ -189,3 +208,5 @@ class SituationFormationCard extends StatelessWidget {
     );
   }
 }
+
+

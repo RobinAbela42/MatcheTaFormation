@@ -89,8 +89,12 @@ class _SituationAdminPageState extends State<SituationAdminPage> {
             final s = situations[index];
             return SituationCard(
               title: s.description,
-              response1: s.responses?[0].description ?? 'No response 1',
-              response2: s.responses?[1].description ?? 'No response 2',
+              response1: (s.responses != null && s.responses!.isNotEmpty)
+                  ? s.responses![0].description ?? 'No response 1'
+                  : 'No response 1',
+              response2: (s.responses != null && s.responses!.length > 1)
+                  ? s.responses![1].description ?? 'No response 2'
+                  : 'No response 2',
               onTap: () {
                 setState(() {
                   _selectedSituation = s;
