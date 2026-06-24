@@ -18,7 +18,7 @@ class SituationEdit extends StatefulWidget {
 class _SituationEditState extends State<SituationEdit> {
   late final TextEditingController _descriptionController;
   late final List<TextEditingController> _responseControllers;
-  late final Response? _isEditingResponsesFormation;
+  Response? _isEditingResponsesFormation;
 
   @override
   void initState() {
@@ -32,8 +32,120 @@ class _SituationEditState extends State<SituationEdit> {
         .toList();
   }
 
+  OverlayEntry? _overlayEntry;
+
+  void _showOverlay() {
+    _removeOverlay();
+    Future<List<Formation>> formations = DatabaseHelper().getFormations();
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Positioned.fill(
+        child: Material(
+          color: Colors.black38,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _removeOverlay,
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Add Formation',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text('Select a formation from the list below.'),
+                    const SizedBox(height: 16),
+                    FutureBuilder<List<Formation>>(
+                      future: formations,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState != ConnectionState.done) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        final formationList = snapshot.data ?? <Formation>[];
+                        if (formationList.isEmpty) {
+                          return const Text('No formations available.');
+                        }
+                        return Wrap(
+                          children: [
+                            for (final formation in formationList)
+                              ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    final editingResponse =
+                                        _isEditingResponsesFormation;
+                                    if (editingResponse != null) {
+                                      final responseIndex =
+                                          widget.situation.responses
+                                              ?.indexWhere(
+                                                (response) =>
+                                                    response.id ==
+                                                    editingResponse.id,
+                                              ) ??
+                                          -1;
+                                      if (responseIndex != -1) {
+                                        widget
+                                            .situation
+                                            .responses?[responseIndex]
+                                            .formations
+                                            ?.addEntries(
+                                              <MapEntry<Formation, int>>[
+                                                MapEntry(formation, 1),
+                                              ],
+                                            );
+                                      }
+                                    }
+                                    _isEditingResponsesFormation = null;
+                                    _removeOverlay();
+                                  });
+                                },
+                                child: Text(formation.name),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    ElevatedButton(
+                      onPressed: () {
+                        _isEditingResponsesFormation = null;
+                        _removeOverlay();
+                      },
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context, debugRequiredFor: widget).insert(_overlayEntry!);
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    // _overlayEntry?.dispose();
+    _overlayEntry = null;
+  }
+
   @override
   void dispose() {
+    _removeOverlay();
     _descriptionController.dispose();
     for (final c in _responseControllers) {
       c.dispose();
@@ -102,8 +214,6 @@ class _SituationEditState extends State<SituationEdit> {
                     ),
                     const SizedBox(height: 8),
 
-
-
                     if (widget
                             .situation
                             .responses?[index]
@@ -114,15 +224,19 @@ class _SituationEditState extends State<SituationEdit> {
                         'Formations:',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _isEditingResponsesFormation =
-                              widget.situation.responses?[index];
-                        });
-                      },
-                      child: Icon(Icons.add),
-                    ),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            if (_isEditingResponsesFormation !=
+                                widget.situation.responses?[index]) {
+                              _isEditingResponsesFormation =
+                                  widget.situation.responses?[index];
+                              _showOverlay();
+                            }
+                          });
+                        },
+                        child: Icon(Icons.add),
+                      ),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -189,6 +303,7 @@ class _SituationEditState extends State<SituationEdit> {
   }
 }
 
+/// This is the widget for the formations under a formation's response. It contains the formation name store on [text], and a button to delete it, called [onDelete].
 class SituationFormationCard extends StatelessWidget {
   final String text;
   final VoidCallback onDelete;
