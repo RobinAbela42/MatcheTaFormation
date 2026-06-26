@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:match_ta_formation_0/DataBase/link.dart';
 
 class UserPage extends StatefulWidget {
-  const UserPage({Key? key}) : super(key: key);
+  const UserPage({super.key});
 
   @override
   State<UserPage> createState() => _UserPageState();
@@ -23,8 +23,7 @@ class SwipeCard extends StatefulWidget {
   final double width;
   final double height;
 
-  const SwipeCard({Key? key, this.child, this.width = 320, this.height = 480, this.situation})
-    : super(key: key);
+  const SwipeCard({super.key, this.child, this.width = 320, this.height = 480, this.situation});
 
   @override
   State<SwipeCard> createState() => _SwipeCardState();

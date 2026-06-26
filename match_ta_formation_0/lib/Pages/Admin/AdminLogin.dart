@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:match_ta_formation_0/DataBase/link.dart';
 
 class AdminLogin extends StatefulWidget {
-  const AdminLogin({Key? key}) : super(key: key);
+  const AdminLogin({super.key});
 
   @override
   _AdminLoginState createState() => _AdminLoginState();

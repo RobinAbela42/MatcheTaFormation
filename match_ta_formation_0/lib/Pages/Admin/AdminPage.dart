@@ -4,7 +4,7 @@ import 'package:match_ta_formation_0/DataBase/link.dart';
 import 'package:match_ta_formation_0/Pages/Admin/situationAdminPage.dart';
 
 class AdminPage extends StatefulWidget {
-  const AdminPage({Key? key}) : super(key: key);
+  const AdminPage({super.key});
 
   @override
   State<AdminPage> createState() => _AdminPageState();
@@ -44,7 +44,7 @@ class _AdminPageState extends State<AdminPage> {
 
 //Situation
 class SituationAdminPage extends StatefulWidget {
-  const SituationAdminPage({Key? key}) : super(key: key);
+  const SituationAdminPage({super.key});
 
   @override
   State<SituationAdminPage> createState() => _SituationAdminPageState();
@@ -72,6 +72,14 @@ class _SituationAdminPageState extends State<SituationAdminPage> {
           return const Center(child: Text('No situations found.'));
         }
 
+        if (_isAddingSituation) {
+          return SituationAdd(
+            onClose: () => setState(() {
+              _isAddingSituation = false;
+            }),
+          );
+        }
+
         if (_selectedSituation != null) {
           return SituationEdit(
             situation: _selectedSituation!,
@@ -79,29 +87,46 @@ class _SituationAdminPageState extends State<SituationAdminPage> {
           );
         }
 
-
         final situations = snapshot.data!;
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: situations.length,
-          itemBuilder: (context, index) {
-            final s = situations[index];
-            return SituationCard(
-              title: s.description,
-              response1: (s.responses != null && s.responses!.isNotEmpty)
-                  ? s.responses![0].description ?? 'No response 1'
-                  : 'No response 1',
-              response2: (s.responses != null && s.responses!.length > 1)
-                  ? s.responses![1].description ?? 'No response 2'
-                  : 'No response 2',
-              onTap: () {
-                setState(() {
-                  _selectedSituation = s;
-                });
-              },
-            );
-          },
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ElevatedButton.icon(
+                onPressed: () => {
+                  setState(() {
+                    _isAddingSituation = true;
+                  }),
+                },
+                icon: const Icon(Icons.add),
+                label: Text('Ajouter une situation'),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: situations.length,
+                itemBuilder: (context, index) {
+                  final s = situations[index];
+                  return SituationCard(
+                    title: s.description,
+                    response1: (s.responses != null && s.responses!.isNotEmpty)
+                        ? s.responses![0].description ?? 'No response 1'
+                        : 'No response 1',
+                    response2: (s.responses != null && s.responses!.length > 1)
+                        ? s.responses![1].description ?? 'No response 2'
+                        : 'No response 2',
+                    onTap: () {
+                      setState(() {
+                        _selectedSituation = s;
+                      });
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );
@@ -121,7 +146,7 @@ class SituationCard extends StatelessWidget {
     required this.response2,
     this.onTap,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -137,9 +162,15 @@ class SituationCard extends StatelessWidget {
             children: [
               Text(title, style: Theme.of(context).textTheme.bodyLarge),
               const SizedBox(height: 8),
-              Text('Response 1: $response1', style: Theme.of(context).textTheme.bodyMedium),
+              Text(
+                'Response 1: $response1',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
               const SizedBox(height: 4),
-              Text('Response 2: $response2', style: Theme.of(context).textTheme.bodyMedium),
+              Text(
+                'Response 2: $response2',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
             ],
           ),
         ),
@@ -148,10 +179,9 @@ class SituationCard extends StatelessWidget {
   }
 }
 
-
 //Formations
 class FormationAdminPage extends StatefulWidget {
-  const FormationAdminPage({Key? key}) : super(key: key);
+  const FormationAdminPage({super.key});
 
   @override
   State<FormationAdminPage> createState() => _FormationAdminPageState();
@@ -210,7 +240,7 @@ class _FormationAdminPageState extends State<FormationAdminPage> {
                   });
                 },
                 icon: const Icon(Icons.add),
-                label: const Text('Add Formation'),
+                label: const Text('Ajouter une formation'),
               ),
             ),
             Expanded(
@@ -288,7 +318,7 @@ class FormationCard extends StatelessWidget {
 
 //Result
 class ResultAdminPage extends StatefulWidget {
-  const ResultAdminPage({Key? key}) : super(key: key);
+  const ResultAdminPage({super.key});
 
   @override
   State<ResultAdminPage> createState() => _ResultAdminPageState();

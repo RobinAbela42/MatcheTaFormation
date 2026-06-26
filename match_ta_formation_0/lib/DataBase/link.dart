@@ -1,13 +1,7 @@
 /// link.dart is the main file to  link the database to the app.
+library;
 
 import 'dart:async';
-
-// import 'dart:developer' as developer;
-// import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart';
-// import 'package:flutter/widgets.dart';
-// import 'package:match_ta_formation_0/main.dart';
-// import 'dart:io';
 
 import 'package:flutter/semantics.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -15,7 +9,7 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 class Situation {
-  final int id;
+  final int? id;
   final List<Response>? responses;
   final String description;
 
@@ -29,6 +23,7 @@ class Situation {
     return {'IdSituation': id, 'Description': description};
   }
 
+
   @override
   String toString() {
     return 'Situation(id: $id, description: $description, responses: $responses)';
@@ -36,13 +31,13 @@ class Situation {
 }
 
 class Response {
-  final int id;
+  final int? id;
   final Map<Formation, int>? formations;
   final ResponseType type;
   final String? description;
 
   const Response({
-    required this.id,
+    this.id,
     this.formations,
     this.description,
     required this.type,
@@ -50,7 +45,6 @@ class Response {
 
   Map<String, Object?> toMap() {
     return {
-      'IdResponse': id,
       'Description': description,
       'IdResponseType':
           type.id, // Foreign Key relation resolved from the object
@@ -577,6 +571,16 @@ class DatabaseHelper {
           ],
         ),
     ];
+  }
+
+  Future<List<ResponseType>> getResponseType() async {
+    final db = await database;
+    final List<Map<String, Object?>> responseTypeMaps = await db.query('ResponseType');
+    return [
+      for (final {'IdResponseType': id as int, 'Label': label as String} in responseTypeMaps)
+        ResponseType(id: id, label: label),
+    ];
+
   }
 
   Future<void> deleteFormation(Formation formation) async {
