@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:match_ta_formation_0/DataBase/link.dart';
 
@@ -18,7 +20,7 @@ class SituationEdit extends StatefulWidget {
 class _SituationEditState extends State<SituationEdit> {
   late final TextEditingController _descriptionController;
   late final List<TextEditingController> _responseControllers;
-  Response? _isEditingResponsesFormation;
+  int? _isEditingResponseIndex;
 
   @override
   void initState() {
@@ -86,14 +88,14 @@ class _SituationEditState extends State<SituationEdit> {
                                   onPressed: () {
                                     setState(() {
                                       final editingResponse =
-                                          _isEditingResponsesFormation;
+                                          _isEditingResponseIndex;
                                       if (editingResponse != null) {
                                         final responseIndex =
                                             widget.situation.responses
                                                 ?.indexWhere(
                                                   (response) =>
                                                       response.id ==
-                                                      editingResponse.id,
+                                                      editingResponse,
                                                 ) ??
                                             -1;
                                         if (responseIndex != -1) {
@@ -108,7 +110,7 @@ class _SituationEditState extends State<SituationEdit> {
                                               );
                                         }
                                       }
-                                      _isEditingResponsesFormation = null;
+                                      _isEditingResponseIndex = null;
                                       _removeOverlay();
                                     });
                                   },
@@ -123,7 +125,7 @@ class _SituationEditState extends State<SituationEdit> {
 
                     ElevatedButton(
                       onPressed: () {
-                        _isEditingResponsesFormation = null;
+                        _isEditingResponseIndex = null;
                         _removeOverlay();
                       },
                       child: const Text('Close'),
@@ -203,7 +205,7 @@ class _SituationEditState extends State<SituationEdit> {
                   children: <Widget>[
                     Center(
                       child: Text(
-                        'Reponse : ${widget.situation.responses?[index].type.label ?? 'Unknown'} :',
+                        'Swipe à ${widget.situation.responses?[index].type.label ?? 'Unknown'} :',
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -223,10 +225,10 @@ class _SituationEditState extends State<SituationEdit> {
                     ElevatedButton(
                       onPressed: () {
                         setState(() {
-                          if (_isEditingResponsesFormation !=
-                              widget.situation.responses?[index]) {
-                            _isEditingResponsesFormation =
-                                widget.situation.responses?[index];
+                          if (_isEditingResponseIndex !=
+                              widget.situation.responses?[index].id) {
+                            _isEditingResponseIndex =
+                                widget.situation.responses?[index].id;
                             _showOverlay();
                           }
                         });
@@ -314,7 +316,7 @@ class _SituationAddState extends State<SituationAdd> {
   late final TextEditingController _descriptionController;
   final List<TextEditingController> _responseControllers = [];
   final List<Response> responses = <Response>[];
-  Response? _isEditingResponsesFormation;
+  int? _isEditingResponseIndex;
 
   @override
   void initState() {
@@ -328,8 +330,11 @@ class _SituationAddState extends State<SituationAdd> {
 
       // 3. Wrap the state changes in setState
       setState(() {
+        int i = 0;
         for (final responseType in responseTypes) {
+          i++;
           final newResponse = Response(
+            id:i, 
             type: responseType,
             description: '',
             formations: <Formation, int>{},
@@ -399,25 +404,19 @@ class _SituationAddState extends State<SituationAdd> {
                                 child: ElevatedButton(
                                   onPressed: () {
                                     setState(() {
-                                      final editingResponse =
-                                          _isEditingResponsesFormation;
+                                      final editingResponse = _isEditingResponseIndex;
                                       if (editingResponse != null) {
-                                        final responseIndex = responses
-                                            .indexWhere(
-                                              (response) =>
-                                                  response.id ==
-                                                  editingResponse.id,
-                                            );
+                                        final responseIndex = responses.indexWhere((response) => response.id == _isEditingResponseIndex);
                                         if (responseIndex != -1) {
                                           responses[responseIndex].formations
-                                              ?.addEntries(
-                                                <MapEntry<Formation, int>>[
-                                                  MapEntry(formation, 1),
-                                                ],
-                                              );
+                                            ?.addEntries(
+                                              <MapEntry<Formation, int>>[
+                                                MapEntry(formation, 1),
+                                              ],
+                                            );
                                         }
                                       }
-                                      _isEditingResponsesFormation = null;
+                                      _isEditingResponseIndex = null;
                                       _removeOverlay();
                                     });
                                   },
@@ -432,7 +431,7 @@ class _SituationAddState extends State<SituationAdd> {
 
                     ElevatedButton(
                       onPressed: () {
-                        _isEditingResponsesFormation = null;
+                        _isEditingResponseIndex = null;
                         _removeOverlay();
                       },
                       child: const Text('Close'),
@@ -451,7 +450,7 @@ class _SituationAddState extends State<SituationAdd> {
 
   void _removeOverlay() {
     _overlayEntry?.remove();
-    // _overlayEntry?.dispose();
+    _overlayEntry?.dispose();
     _overlayEntry = null;
   }
 
@@ -512,7 +511,7 @@ class _SituationAddState extends State<SituationAdd> {
                   children: <Widget>[
                     Center(
                       child: Text(
-                        'Reponse : ${responses[index].type.label} :',
+                        'Swipe à ${responses[index].type.label} :',
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -533,8 +532,9 @@ class _SituationAddState extends State<SituationAdd> {
                     ElevatedButton(
                       onPressed: () {
                         setState(() {
-                          if (_isEditingResponsesFormation != responses[index]) {
-                            _isEditingResponsesFormation = responses[index];
+                          // stderr.writeln('Editing response index : ${responses[index].id}');
+                          if (_isEditingResponseIndex != responses[index].id) {
+                            _isEditingResponseIndex = responses[index].id;
                             _showOverlay();
                           }
                         });
@@ -546,7 +546,7 @@ class _SituationAddState extends State<SituationAdd> {
                         spacing: 8,
                         runSpacing: 8,
                         children:
-                            responses[index].formations?.entries
+                            responses[index].formations!.entries
                                 .map(
                                   (entry) => SituationFormationCard(
                                     text: entry.key.name,
@@ -559,8 +559,7 @@ class _SituationAddState extends State<SituationAdd> {
                                     },
                                   ),
                                 )
-                                .toList() ??
-                            [],
+                                .toList(),
                       ),
                     ],
                   ],

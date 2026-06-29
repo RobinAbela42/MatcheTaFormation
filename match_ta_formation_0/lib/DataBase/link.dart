@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/semantics.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
@@ -22,7 +23,6 @@ class Situation {
   Map<String, Object?> toMap() {
     return {'IdSituation': id, 'Description': description};
   }
-
 
   @override
   String toString() {
@@ -242,11 +242,27 @@ class DatabaseHelper {
 
   Future<void> insertSituation(Situation situation) async {
     final db = await database;
-    await db.insert(
+
+    final int insertedSituationId = await db.insert(
       'Situation',
       situation.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+
+    if (situation.responses != null) {
+      for (var response in situation.responses!) {
+        await insertResponse(
+          Response(
+            id: null,
+            description: response.description,
+            type: response.type,
+            formations: response.formations,
+          ),
+          situationId: insertedSituationId, // Pass it directly
+          executor: db,
+        );
+      }
+    }
   }
 
   // Accept a DatabaseExecutor. If none is provided, fallback to the main db.
@@ -255,27 +271,23 @@ class DatabaseHelper {
     int? situationId,
     DatabaseExecutor? executor,
   }) async {
-    // Use the passed transaction, or fallback to the standard db instance
     final client = executor ?? await database;
 
-    // 1. Prepare data map
     final responseMap = response.toMap();
     if (situationId != null) {
       responseMap['IdSituation'] = situationId;
     }
 
-    // 2. Insert the core Response
-    await client.insert(
+    final int newResponseId = await client.insert(
       'Response',
       responseMap,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
-    // 3. Insert relationship pairs into the junction table
     if (response.formations != null) {
       for (var entry in response.formations!.entries) {
         await client.insert('ResponseFormation', {
-          'IdResponse': response.id,
+          'IdResponse': newResponseId, // <--- Change from response.id
           'IdFormation': entry.key.id,
           'Weight': entry.value,
         }, conflictAlgorithm: ConflictAlgorithm.replace);
@@ -393,7 +405,11 @@ class DatabaseHelper {
     });
   }
 
-  Future<void> updateResponse(Response response, {int? situationId,DatabaseExecutor? executor,}) async {
+  Future<void> updateResponse(
+    Response response, {
+    int? situationId,
+    DatabaseExecutor? executor,
+  }) async {
     final client = executor ?? await database;
 
     // 1. Prepare data map
@@ -575,23 +591,56 @@ class DatabaseHelper {
 
   Future<List<ResponseType>> getResponseType() async {
     final db = await database;
-    final List<Map<String, Object?>> responseTypeMaps = await db.query('ResponseType');
+    final List<Map<String, Object?>> responseTypeMaps = await db.query(
+      'ResponseType',
+    );
     return [
-      for (final {'IdResponseType': id as int, 'Label': label as String} in responseTypeMaps)
+      for (final {'IdResponseType': id as int, 'Label': label as String}
+          in responseTypeMaps)
         ResponseType(id: id, label: label),
     ];
-
   }
 
   Future<void> deleteFormation(Formation formation) async {
     final db = await database;
 
     await db.transaction((txn) async {
-      txn.delete(
+      await txn.delete(
         'Formation',
-        where: 'Formation = ?',
+        where: 'IdFormation = ?',
         whereArgs: [formation.id],
       );
+      await txn.delete(
+        'ResponseFormation',
+        where: 'IdFormation = ?',
+        whereArgs: [formation.id],
+      );
+    });
+  }
+
+  Future<void> deleteSituation(Situation situation) async {
+    final db = await database;
+
+    await db.transaction((txn) async {
+      await txn.delete(
+        'Situation',
+        where: 'IdSituation = ?',
+        whereArgs: [situation.id],
+      );
+
+      for (var response in situation.responses!) {
+        await txn.delete(
+          'Response',
+          where: 'IdResponse = ?',
+          whereArgs: [response.id],
+        );
+        await txn.delete(
+          'ResponseFormation',
+          where: 'IdResponse = ?',
+          whereArgs: [response.id],
+        );
+
+      }
     });
   }
 }

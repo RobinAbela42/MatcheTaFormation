@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:match_ta_formation_0/Pages/Admin/formationAdminPage.dart';
 import 'package:match_ta_formation_0/DataBase/link.dart';
@@ -122,6 +125,12 @@ class _SituationAdminPageState extends State<SituationAdminPage> {
                         _selectedSituation = s;
                       });
                     },
+                    onDelete: () async {
+                      await DatabaseHelper().deleteSituation(s);
+                      setState(() {
+                        
+                      });
+                    },
                   );
                 },
               ),
@@ -138,6 +147,7 @@ class SituationCard extends StatelessWidget {
   final String response1;
   final String response2;
   final VoidCallback? onTap;
+  final AsyncCallback? onDelete;
 
   const SituationCard({
     super.key,
@@ -145,6 +155,7 @@ class SituationCard extends StatelessWidget {
     required this.response1,
     required this.response2,
     this.onTap,
+    this.onDelete,
   });
 
   @override
@@ -157,20 +168,29 @@ class SituationCard extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Text(title, style: Theme.of(context).textTheme.bodyLarge),
-              const SizedBox(height: 8),
-              Text(
-                'Response 1: $response1',
-                style: Theme.of(context).textTheme.bodyMedium,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.bodyLarge),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Response 1: $response1',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Response 2: $response2',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Response 2: $response2',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+
+              ElevatedButton(onPressed: onDelete
+              , child: Icon(Icons.delete)),
             ],
           ),
         ),
@@ -229,36 +249,46 @@ class _FormationAdminPageState extends State<FormationAdminPage> {
         // 4. Data is safely available here
         final formations = snapshot.data!;
 
-        return Column(
+        return Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _isAddingFormation = true;
-                  });
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Ajouter une formation'),
-              ),
-            ),
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: formations.length,
-                itemBuilder: (context, index) {
-                  final f = formations[index];
-                  return FormationCard(
-                    title: f.name,
-                    subtitle: f.description,
-                    onTap: () {
-                      setState(() {
-                        _selectedFormation = f;
-                      });
-                    },
-                  );
-                },
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _isAddingFormation = true;
+                        });
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Ajouter une formation'),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: formations.length,
+                      itemBuilder: (context, index) {
+                        final f = formations[index];
+                        return FormationCard(
+                          title: f.name,
+                          subtitle: f.description,
+                          onTap: () {
+                            setState(() {
+                              _selectedFormation = f;
+                            });
+                          },
+                          onDelete: () async {
+                            await DatabaseHelper().deleteFormation(f);
+                            setState(() {});
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -272,12 +302,14 @@ class FormationCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
+  final AsyncCallback? onDelete;
 
   const FormationCard({
     super.key,
     required this.title,
     required this.subtitle,
     this.onTap,
+    this.onDelete,
   });
 
   @override
@@ -307,7 +339,7 @@ class FormationCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right),
+              ElevatedButton(onPressed: onDelete, child: Icon(Icons.delete)),
             ],
           ),
         ),
