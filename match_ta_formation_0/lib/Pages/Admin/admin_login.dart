@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'AdminPage.dart';
+import 'admin_page.dart';
 // import 'package:flutter/widgets.dart';
 import 'package:match_ta_formation_0/DataBase/link.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'Pages/Admin/admin_login.dart';
-import 'Pages/User/UserPage.dart';
+import 'Pages/User/user_page.dart';
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -112,7 +112,9 @@ class _MyHomePageState extends State<MyHomePage> {
           // action in the IDE, or press "p" in the console), to see the
           // wireframe for each widget.
           mainAxisAlignment: .center,
-          children: <Widget>[UserPage()],
+          children: [
+            Expanded(child: UserPage())
+          ],
         ),
       ),
     );
