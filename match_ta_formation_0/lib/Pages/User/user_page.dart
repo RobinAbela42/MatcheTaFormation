@@ -1,3 +1,5 @@
+// import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:match_ta_formation_0/DataBase/link.dart';
 
@@ -10,20 +12,25 @@ class UserPage extends StatefulWidget {
 
 class _UserPageState extends State<UserPage> {
   List<Response> responses = [];
+  //Jeu de test
+  Situation situation = Situation(id: 12, description: 'DEm', responses: [
+    Response(id:1 ,type: ResponseType(id: 1, label: 'Gauche' ), description: 'Reponse de gauche'),
+    Response(id:2 ,type: ResponseType(id: 2, label: 'Droite' ), description: 'Reponse de droite', formations: <Formation, int>{ Formation(name: 'INFO', description: 'Informatique', levels: [Level(id: 1, label: 'tertiaire')]) : 1 }),
+  ]);
 
   @override
   Widget build(BuildContext context) {
-    return SwipeCard( width: 600, height: 800,child: Text('This is a swipe card.'));
+    return SwipeCard( width: 600, height: 800, situation:situation,  );
   }
 }
 
 class SwipeCard extends StatefulWidget {
   final Widget? child;
-  final Situation? situation;
+  final Situation situation;
   final double width;
   final double height;
 
-  const SwipeCard({super.key, this.child, this.width = 320, this.height = 480, this.situation});
+  const SwipeCard({super.key, this.child, this.width = 320, this.height = 480, required this.situation});
 
   @override
   State<SwipeCard> createState() => _SwipeCardState();
@@ -89,7 +96,7 @@ class _SwipeCardState extends State<SwipeCard>
           if (_offset.dx.abs() > 300) {
             // If the card is swiped far enough, you can implement logic to remove it or perform an action.
             // For now, we'll just reset it back to the center.
-            _runSwipeAnimation(Offset(_offset.dx.sign * 900, 0));
+            _runSwipeAnimation(Offset(_offset.dx.sign * 1100, 0));
             
           } else {
             _runResetAnimation();
@@ -121,10 +128,10 @@ class _SwipeCardState extends State<SwipeCard>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.person, size: 96, color: Colors.grey[700]),
         SizedBox(height: 16),
+
         Text(
-          'SwipeCard',
+          widget.situation.description,
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
