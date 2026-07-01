@@ -24,12 +24,34 @@ class _UserPageState extends State<UserPage> {
   Situation? currentSituation;
   int sessionCounter = 0;
 
-/// Returns the aggregated formation weights for a [Situation], considering
-/// only formations that include [level] in their [Formation.levels] list.
+
+  /// Returns true if every response in [situation] that has formations
+/// contains at least one formation whose [Formation.levels] includes [level].
 ///
-/// Every formation found across all of a situation's responses is summed by
-/// its weight value. A response with no formations, or with formations that
-/// don't match the required level, simply contributes nothing.
+/// Responses with a null or empty formations map are exempt — they carry no
+/// formation data and therefore cannot fail this check.
+///
+/// This is the hard eligibility gate: a situation that fails it has at least
+/// one response whose formations are all irrelevant to the current level,
+/// meaning it would be shown to the user in a context where no valid answer
+/// exists for that response.
+bool _isEligibleForLevel(Situation situation, Level level) {
+  final responses = situation.responses ?? [];
+  for (final response in responses) {
+    final formations = response.formations;
+    if (formations == null || formations.isEmpty) continue; // no formations → exempt
+    final hasMatch = formations.keys.any((f) => f.levels.contains(level));
+    if (!hasMatch) return false; // this response has formations, none match level
+  }
+  return true;
+}
+
+  /// Returns the aggregated formation weights for a [Situation], considering
+  /// only formations that include [level] in their [Formation.levels] list.
+  ///
+  /// Every formation found across all of a situation's responses is summed by
+  /// its weight value. A response with no formations, or with formations that
+  /// don't match the required level, simply contributes nothing.
 Map<Formation, int> _situationFormationWeights(
   Situation situation,
   Level level,
@@ -53,13 +75,17 @@ Map<Formation, int> _situationFormationWeights(
   }
   return weights;
 }
- 
+
 /// Picks [count] distinct situations from [situations], trying to keep
 /// the cumulative formation weight as balanced as possible across all
 /// formations that include [level].
 ///
-/// Formations that don't belong to [level] are ignored entirely, so the
-/// balancing only considers what's relevant to the current session's level.
+/// Eligibility requirement (hard gate, applied before any scoring):
+/// every response within a situation that carries formations must have at
+/// least one formation belonging to [level]. A situation that fails this —
+/// even for a single response — is excluded entirely, because it would
+/// present the user with a response that has no valid formation for the
+/// current level.
 ///
 /// Strategy — greedy + randomized:
 /// For each slot, every still-available situation is scored by how much it
@@ -74,18 +100,25 @@ List<Situation> selectBalancedSituations(
 }) {
   final rng = random ?? Random();
  
-  if (situations.length <= count) {
-    // Not enough distinct situations — shuffle and return everything.
-    return List<Situation>.from(situations)..shuffle(rng);
-  }
+  // Hard gate: filter to situations where every response with formations
+  // has at least one formation belonging to [level]. Do this before
+  // computing weights so we never process an ineligible situation.
+  final List<Situation> eligible =
+      situations.where((s) => _isEligibleForLevel(s, level)).toList();
  
-  // Precompute each situation's level-filtered formation weights once,
-  // so we don't re-traverse all responses on every scoring loop iteration.
+  // Precompute formation weights for eligible situations only.
+  // Every weight map here is guaranteed non-empty (eligibility ensures it).
   final Map<Situation, Map<Formation, int>> situationWeights = {
-    for (final s in situations) s: _situationFormationWeights(s, level),
+    for (final s in eligible) s: _situationFormationWeights(s, level),
   };
  
-  final List<Situation> remaining = List<Situation>.from(situations);
+  if (eligible.length <= count) {
+    // Fewer eligible situations than requested — return all of them shuffled.
+    // Callers should handle a shorter-than-expected result gracefully.
+    return eligible..shuffle(rng);
+  }
+ 
+  final List<Situation> remaining = List<Situation>.from(eligible);
   final List<Situation> selected = [];
  
   // Running totals: Formation → cumulative weight contributed by selected
@@ -105,32 +138,17 @@ List<Situation> selectBalancedSituations(
     final List<Situation> bestCandidates = [];
  
     for (final candidate in remaining) {
+      // weights is guaranteed non-empty: eligibility ensures every
+      // candidate has at least one level-matching formation.
       final weights = situationWeights[candidate]!;
- 
-      if (weights.isEmpty) {
-        // This situation has no formations matching the required level.
-        // It's neutral — it can't help or hurt balance — so give it a
-        // constant score of 0.0. It remains eligible but won't beat a
-        // situation that genuinely helps an under-represented formation.
-        const neutralScore = 0.0;
-        if (neutralScore > bestScore) {
-          bestScore = neutralScore;
-          bestCandidates
-            ..clear()
-            ..add(candidate);
-        } else if (neutralScore == bestScore) {
-          bestCandidates.add(candidate);
-        }
-        continue;
-      }
  
       // Score this candidate:
       //  - Formations currently below the average contribute positively
-      //    (deficit is positive → good to pick this situation).
+      //    (deficit > 0 → picking this helps balance).
       //  - Formations already above the average contribute negatively
-      //    (deficit is negative → picking this would worsen balance).
-      // The weight multiplier means a formation touched by many responses
-      // has a proportionally larger influence on the score.
+      //    (deficit < 0 → picking this worsens balance).
+      // The weight multiplier means formations touched by many responses
+      // have proportionally more influence on the score.
       double score = 0;
       weights.forEach((formation, weight) {
         final current = totals[formation] ?? 0;
@@ -186,14 +204,17 @@ List<Situation> selectBalancedSituations(
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text('No situations found.'));
           } else {
-            currentSessionSituations = selectBalancedSituations(snapshot.data!, selectedLevel!);
+            currentSessionSituations = selectBalancedSituations(
+              snapshot.data!,
+              selectedLevel!,
+            );
             currentSituation = currentSessionSituations[sessionCounter];
             for (var situation in currentSessionSituations) {
               stderr.write('\nSituation n°${situation.id ?? 0}   ');
               for (var response in situation.responses!) {
                 stderr.write(' R ');
                 for (var formation in response.formations!.keys) {
-                  stderr.write(' F ');
+                  stderr.write(' F n °${formation.id ?? 0} ');
                   for (var level in formation.levels) {
                     stderr.write(' ${level.label} ');
                   }
@@ -216,15 +237,36 @@ List<Situation> selectBalancedSituations(
               children: [
                 Expanded(
                   child: Center(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        selectedLevel = Level(id: 1, label: 'Secondaire');
-                        setState(() {
-                          
-                        });
+                    child: FutureBuilder<List<Level>>(
+                      future: DatabaseHelper().getLevels(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const CircularProgressIndicator();
+                        }
+                        if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        }
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Text('No levels found.');
+                        } else {
+                          final levels = snapshot.data!;
+                          return ListView.builder(
+                            itemCount: levels.length,
+                            itemBuilder: (context, index) {
+                              final level = levels[index];
+                              return ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    selectedLevel = level;
+                                  });
+                                },
+                                child: Text(level.label),
+                              );
+                            },
+                          );
+                        }
                       },
-                      icon: Icon(Icons.start),
-                      label: Text('Start session'),
                     ),
                   ),
                 ),
@@ -354,12 +396,16 @@ class _SwipeCardState extends State<SwipeCard>
         Expanded(
           child: Row(
             children: [
-              Expanded(child: Text(widget.situation.responses![0].description!)),
-              SizedBox(height: 12, width: 12,),
-              Expanded(child: Text(widget.situation.responses![1].description!))
+              Expanded(
+                child: Text(widget.situation.responses![0].description!),
+              ),
+              SizedBox(height: 12, width: 12),
+              Expanded(
+                child: Text(widget.situation.responses![1].description!),
+              ),
             ],
           ),
-        )
+        ),
       ],
     );
   }
