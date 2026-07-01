@@ -103,10 +103,10 @@ class Formation {
 }
 
 class Result {
-  final int id;
-  final List<Formation> formations;
-  final DateTime time;
-  final Category category;
+  final int? id;
+  final List<Formation>? formations;
+  final DateTime? time;
+  final Category? category;
 
   const Result({
     required this.id,
@@ -118,10 +118,9 @@ class Result {
   Map<String, Object?> toMap() {
     return {
       'IdResult': id,
-      'Time': time
-          .toIso8601String(), // Formatted safely for SQL text/datetime storage
+      'Time': time?.toIso8601String(), // Formatted safely for SQL text/datetime storage
       'IdCategory':
-          category.id, // Foreign Key relation resolved from the object
+          category?.id, // Foreign Key relation resolved from the object
     };
   }
 
@@ -340,7 +339,7 @@ class DatabaseHelper {
       );
 
       // 2. Loop and link inside the "FormationResult" junction table
-      for (var formation in result.formations) {
+      for (var formation in result.formations ?? []) {
         await txn.insert('FormationResult', {
           'IdResult': result.id,
           'IdFormation': formation.id,
