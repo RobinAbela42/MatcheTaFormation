@@ -2,6 +2,8 @@
 
 // import 'dart:js_interop';
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:match_ta_formation_0/DataBase/link.dart';
@@ -22,142 +24,146 @@ class _UserPageState extends State<UserPage> {
   Situation? currentSituation;
   int sessionCounter = 0;
 
-  // / Returns the aggregated formation weights for a [Situation]:
-  // / the union of every Formation found across all of its Responses,
-  // / summed by weight (a formation appearing in multiple responses,
-  // / or with weight > 1, contributes more).
-  // /
-  // / A response with no formations (or a null/empty map) simply
-  // / contributes nothing — that's fine and expected.
-  Map<int, int> _situationFormationWeights(Situation situation) {
-    final Map<int, int> weights = {};
-    final responses = situation.responses ?? [];
-    for (final response in responses) {
-      final formations = response.formations;
-      if (formations == null) continue;
-      formations.forEach((formation, weight) {
-        final id = formation.id;
-        if (id == null) return; // can't tally a formation without an id
-        weights.update(
-          id,
-          (existing) => existing + weight,
-          ifAbsent: () => weight,
-        );
-      });
-    }
-    return weights;
+/// Returns the aggregated formation weights for a [Situation], considering
+/// only formations that include [level] in their [Formation.levels] list.
+///
+/// Every formation found across all of a situation's responses is summed by
+/// its weight value. A response with no formations, or with formations that
+/// don't match the required level, simply contributes nothing.
+Map<Formation, int> _situationFormationWeights(
+  Situation situation,
+  Level level,
+) {
+  final Map<Formation, int> weights = {};
+  final responses = situation.responses ?? [];
+ 
+  for (final response in responses) {
+    final formations = response.formations;
+    if (formations == null) continue;
+ 
+    formations.forEach((formation, weight) {
+      if (formation.id == null) return; // no id → can't track this formation
+      if (!formation.levels.contains(level)) return; // level filter
+      weights.update(
+        formation,
+        (existing) => existing + weight,
+        ifAbsent: () => weight,
+      );
+    });
   }
-
-  // / Picks [count] distinct situations from [situations], trying to keep
-  // / the cumulative formation weight (summed across all selected situations'
-  // / responses) as balanced as possible across all formations encountered.
-  // /
-  // / Strategy: greedy + randomized.
-  // / For each slot, score every still-available situation by how it would
-  // / affect balance if added (it's rewarded for touching formations that
-  // / are currently under-represented, and penalized for adding more weight
-  // / to formations that are already ahead). Among the situations tied for
-  // / the best (or near-best) score, one is chosen at random, so the result
-  // / isn't fully deterministic and varies between calls.
-
-  List<Situation> selectBalancedSituations(
-    List<Situation> situations, {
-    int count = 12,
-    Random? random,
-  }) {
-    final rng = random ?? Random();
-
-    if (situations.length <= count) {
-      // Not enough to choose from — just shuffle and return what's available.
-      final pool = List<Situation>.from(situations)..shuffle(rng);
-      return pool;
-    }
-
-    // Precompute each situation's formation weights once.
-    final Map<Situation, Map<int, int>> situationWeights = {
-      for (final s in situations) s: _situationFormationWeights(s),
-    };
-
-    final List<Situation> remaining = List<Situation>.from(situations);
-    final List<Situation> selected = [];
-
-    // Running totals: formationId -> cumulative weight selected so far.
-    final Map<int, int> totals = {};
-
-    for (var slot = 0; slot < count; slot++) {
-      if (remaining.isEmpty) break;
-
-      // Current average weight across formations seen so far (0 if none yet).
-      final avg = totals.isEmpty
-          ? 0.0
-          : totals.values.reduce((a, b) => a + b) / totals.length;
-
-      double bestScore = double.negativeInfinity;
-      final List<Situation> bestCandidates = [];
-
-      for (final candidate in remaining) {
-        final weights = situationWeights[candidate]!;
-
-        if (weights.isEmpty) {
-          // A situation with no formations at all is neutral: it never
-          // unbalances anything. Give it a modest, constant score so it's
-          // still eligible but doesn't dominate situations that actively
-          // help balance.
-          const neutralScore = 0.0;
-          if (neutralScore > bestScore) {
-            bestScore = neutralScore;
-            bestCandidates
-              ..clear()
-              ..add(candidate);
-          } else if (neutralScore == bestScore) {
-            bestCandidates.add(candidate);
-          }
-          continue;
-        }
-
-        // Score: for each formation this situation touches, compare the
-        // formation's current total to the running average.
-        // - Formations currently below average => adding weight there is
-        //   good (positive contribution), more so the further below average.
-        // - Formations already above average => adding more weight there
-        //   is bad (negative contribution).
-        // Formations not yet seen at all count as "infinitely under
-        // represented", approximated here by treating their current total
-        // as 0 and comparing directly to avg (or to a small baseline if
-        // avg is 0 too, so brand-new formations are still preferred).
-        double score = 0;
-        weights.forEach((formationId, weight) {
-          final current = totals[formationId] ?? 0;
-          final deficit = avg - current; // positive = under-represented
-          score += deficit * weight;
-        });
-
-        if (score > bestScore) {
-          bestScore = score;
+  return weights;
+}
+ 
+/// Picks [count] distinct situations from [situations], trying to keep
+/// the cumulative formation weight as balanced as possible across all
+/// formations that include [level].
+///
+/// Formations that don't belong to [level] are ignored entirely, so the
+/// balancing only considers what's relevant to the current session's level.
+///
+/// Strategy — greedy + randomized:
+/// For each slot, every still-available situation is scored by how much it
+/// would help the currently most under-represented formations. Among
+/// situations tied for the best score, one is chosen at random, so results
+/// vary between calls even for identical input data.
+List<Situation> selectBalancedSituations(
+  List<Situation> situations,
+  Level level, {
+  int count = 12,
+  Random? random,
+}) {
+  final rng = random ?? Random();
+ 
+  if (situations.length <= count) {
+    // Not enough distinct situations — shuffle and return everything.
+    return List<Situation>.from(situations)..shuffle(rng);
+  }
+ 
+  // Precompute each situation's level-filtered formation weights once,
+  // so we don't re-traverse all responses on every scoring loop iteration.
+  final Map<Situation, Map<Formation, int>> situationWeights = {
+    for (final s in situations) s: _situationFormationWeights(s, level),
+  };
+ 
+  final List<Situation> remaining = List<Situation>.from(situations);
+  final List<Situation> selected = [];
+ 
+  // Running totals: Formation → cumulative weight contributed by selected
+  // situations so far. Only formations matching [level] appear here.
+  final Map<Formation, int> totals = {};
+ 
+  for (var slot = 0; slot < count; slot++) {
+    if (remaining.isEmpty) break;
+ 
+    // Average weight across all formations seen so far.
+    // Starts at 0.0 when nothing has been selected yet.
+    final avg = totals.isEmpty
+        ? 0.0
+        : totals.values.reduce((a, b) => a + b) / totals.length;
+ 
+    double bestScore = double.negativeInfinity;
+    final List<Situation> bestCandidates = [];
+ 
+    for (final candidate in remaining) {
+      final weights = situationWeights[candidate]!;
+ 
+      if (weights.isEmpty) {
+        // This situation has no formations matching the required level.
+        // It's neutral — it can't help or hurt balance — so give it a
+        // constant score of 0.0. It remains eligible but won't beat a
+        // situation that genuinely helps an under-represented formation.
+        const neutralScore = 0.0;
+        if (neutralScore > bestScore) {
+          bestScore = neutralScore;
           bestCandidates
             ..clear()
             ..add(candidate);
-        } else if (score == bestScore) {
+        } else if (neutralScore == bestScore) {
           bestCandidates.add(candidate);
         }
+        continue;
       }
-
-      // Random pick among equally-good candidates to keep variety run to run.
-      final chosen = bestCandidates[rng.nextInt(bestCandidates.length)];
-      selected.add(chosen);
-      remaining.remove(chosen);
-
-      // Update running totals with the chosen situation's contribution.
-      situationWeights[chosen]!.forEach((formationId, weight) {
-        totals.update(
-          formationId,
-          (existing) => existing + weight,
-          ifAbsent: () => weight,
-        );
+ 
+      // Score this candidate:
+      //  - Formations currently below the average contribute positively
+      //    (deficit is positive → good to pick this situation).
+      //  - Formations already above the average contribute negatively
+      //    (deficit is negative → picking this would worsen balance).
+      // The weight multiplier means a formation touched by many responses
+      // has a proportionally larger influence on the score.
+      double score = 0;
+      weights.forEach((formation, weight) {
+        final current = totals[formation] ?? 0;
+        score += (avg - current) * weight; // deficit × weight
       });
+ 
+      if (score > bestScore) {
+        bestScore = score;
+        bestCandidates
+          ..clear()
+          ..add(candidate);
+      } else if (score == bestScore) {
+        bestCandidates.add(candidate);
+      }
     }
-    return selected;
+ 
+    // Pick randomly among equally-scored candidates for run-to-run variety.
+    final chosen = bestCandidates[rng.nextInt(bestCandidates.length)];
+    selected.add(chosen);
+    remaining.remove(chosen);
+ 
+    // Commit the chosen situation's weights to the running totals.
+    situationWeights[chosen]!.forEach((formation, weight) {
+      totals.update(
+        formation,
+        (existing) => existing + weight,
+        ifAbsent: () => weight,
+      );
+    });
   }
+ 
+  return selected;
+}
 
   //Jeu de test
   @override
@@ -180,16 +186,22 @@ class _UserPageState extends State<UserPage> {
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text('No situations found.'));
           } else {
-            currentSessionSituations = selectBalancedSituations(snapshot.data!);
+            currentSessionSituations = selectBalancedSituations(snapshot.data!, selectedLevel!);
             currentSituation = currentSessionSituations[sessionCounter];
+            for (var situation in currentSessionSituations) {
+              stderr.write('\nSituation n°${situation.id ?? 0}   ');
+              for (var response in situation.responses!) {
+                stderr.write(' R ');
+                for (var formation in response.formations!.keys) {
+                  stderr.write(' F ');
+                  for (var level in formation.levels) {
+                    stderr.write(' ${level.label} ');
+                  }
+                }
+              }
+            }
+            return SwipeCard(situation: currentSituation!);
           }
-          return Center(child: Wrap(
-            children: [
-              ElevatedButton.icon(onPressed: () {setState(() {
-                
-              });}, label: Text('Refresh'), icon: Icon(Icons.refresh)),
-            ],
-          ));
         },
       );
     }
@@ -206,7 +218,7 @@ class _UserPageState extends State<UserPage> {
                   child: Center(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        selectedLevel = Level(id: 5, label: 'label');
+                        selectedLevel = Level(id: 1, label: 'Secondaire');
                         setState(() {
                           
                         });
@@ -339,10 +351,15 @@ class _SwipeCardState extends State<SwipeCard>
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
-        Text(
-          'A big card that can be swiped around and snaps back.',
-          textAlign: TextAlign.center,
-        ),
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(child: Text(widget.situation.responses![0].description!)),
+              SizedBox(height: 12, width: 12,),
+              Expanded(child: Text(widget.situation.responses![1].description!))
+            ],
+          ),
+        )
       ],
     );
   }

@@ -94,6 +94,12 @@ class Formation {
   String toString() {
     return 'Formation(id: $id, name: $name, description: $description, levels: $levels)';
   }
+
+  @override
+  bool operator ==(Object other) => other is Formation && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class Result {
@@ -176,6 +182,12 @@ class Level {
   String toString() {
     return 'Level(id: $id, label: $label)';
   }
+
+  @override
+  bool operator ==(Object other) => other is Level && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 // void main() async {
@@ -531,6 +543,8 @@ class DatabaseHelper {
     final List<Map<String, Object?>> responseFormationMaps = await db.query(
       'ResponseFormation',
     );
+    final List<Map<String, Object?>> describeMaps = await db.query('Describe');
+    final List<Map<String, Object?>> levelMaps = await db.query('Level');
     return [
       for (final {
             'IdSituation': id as int,
@@ -575,7 +589,19 @@ class DatabaseHelper {
                                 (f) => f['IdFormation'] == formationId,
                               )['Description']
                               as String,
-                      levels: [],
+                      levels: [
+                        for (final {'IdLevel': levelId as int} in describeMaps.where(
+                              (d) => d['IdFormation'] == formationId,
+                            ))
+                          Level(
+                            id: levelId,
+                            label:
+                                levelMaps.firstWhere(
+                                      (l) => l['IdLevel'] == levelId,
+                                    )['Label']
+                                    as String,
+                          ),
+                      ],
                     ): responseFormationMaps.firstWhere(
                           (rf) =>
                               rf['IdResponse'] == responseId &&
@@ -639,7 +665,6 @@ class DatabaseHelper {
           where: 'IdResponse = ?',
           whereArgs: [response.id],
         );
-
       }
     });
   }
