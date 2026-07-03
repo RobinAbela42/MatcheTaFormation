@@ -397,9 +397,6 @@ class _SwipeCardState extends State<SwipeCard>
             angle: _offset.dx / 1000,
             child: Card(
               elevation: 8,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
               child: Container(
                 width: widget.width,
                 height: widget.height,

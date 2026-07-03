@@ -30,7 +30,85 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
+
       theme: ThemeData(
+        fontFamily: 'Gotham',
+        scaffoldBackgroundColor: Color.fromARGB(255, 28, 42, 175),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Color.fromARGB(255, 255, 43, 131),
+          foregroundColor: Color.fromARGB(255, 255, 255, 255),
+        ),
+        cardTheme: CardThemeData(
+          color: Color.fromARGB(255, 255, 43, 131),
+          shape: ContinuousRectangleBorder(
+            borderRadius: BorderRadius.circular(0.0),
+          ),
+        ),
+        textTheme: TextTheme(
+          bodyLarge: TextStyle(
+            color: Color.fromARGB(255, 255, 255, 255),
+            shadows: [
+              Shadow(
+                offset: Offset(1.0, 1.0),
+                blurRadius: 2.0,
+                color: Color.fromARGB(255, 0, 0, 0),
+              ),
+            ],
+          ),
+          bodyMedium: TextStyle(
+            color: Color.fromARGB(255, 255, 255, 255),
+            shadows: [
+              Shadow(
+                offset: Offset(1.0, 1.0),
+                blurRadius: 2.0,
+                color: Color.fromARGB(255, 0, 0, 0),
+              ),
+            ],
+          ),
+          bodySmall: TextStyle(
+            color: Color.fromARGB(255, 255, 255, 255),
+            shadows: [
+              Shadow(
+                offset: Offset(1.0, 1.0),
+                blurRadius: 2.0,
+                color: Color.fromARGB(255, 0, 0, 0),
+              ),
+            ],
+          ),
+          titleSmall: TextStyle(
+            color: Color.fromARGB(255, 255, 255, 255),
+            shadows: [
+              Shadow(
+                offset: Offset(1.0, 1.0),
+                blurRadius: 2.0,
+                color: Color.fromARGB(255, 0, 0, 0),
+              ),
+            ],
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color.fromARGB(255, 255, 43, 131),
+            foregroundColor: Color.fromARGB(255, 255, 255, 255),
+            textStyle: TextStyle(
+              fontFamily: 'Gotham',
+              fontSize: 16.0,
+              fontWeight: FontWeight.normal,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+          ),
+        ),
+        
+        tabBarTheme: TabBarThemeData(
+          unselectedLabelColor: Color.fromARGB(255, 255, 255, 255),
+          indicator: UnderlineTabIndicator(
+            borderSide: BorderSide(width: 5.0, color: Color.fromARGB(255, 255, 43, 131)),
+            insets: EdgeInsets.symmetric(horizontal: 16.0),
+            borderRadius: BorderRadius.circular(2.0), // rounds the line ends
+          ),
+        ),
         // This is the theme of your application.
         //
         // TRY THIS: Try running your application with "flutter run". You'll see
@@ -46,8 +124,10 @@ class MyApp extends StatelessWidget {
         //
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
-        colorScheme: .fromSeed(
+        colorScheme: ColorScheme.fromSeed(
           seedColor: const Color.fromARGB(255, 255, 43, 131),
+          primary: Color.fromARGB(255, 255, 43, 131),
+          secondary: Color.fromARGB(255, 28, 42, 175),
         ),
       ),
       home: const MyHomePage(title: 'Matche ta formation !'),
@@ -112,11 +192,31 @@ class _MyHomePageState extends State<MyHomePage> {
           // action in the IDE, or press "p" in the console), to see the
           // wireframe for each widget.
           mainAxisAlignment: .center,
-          children: [
-            Expanded(child: UserPage())
-          ],
+          children: [Expanded(child: UserPage())],
         ),
       ),
     );
+  }
+}
+
+class DotIndicator extends Decoration {
+  final Color color;
+  const DotIndicator({required this.color});
+
+  @override
+  BoxPainter createBoxPainter([VoidCallback? onChanged]) {
+    return _DotPainter(color: color);
+  }
+}
+
+class _DotPainter extends BoxPainter {
+  final Color color;
+  _DotPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Offset offset, ImageConfiguration cfg) {
+    final rect = offset & cfg.size!;
+    final paint = Paint()..color = color;
+    canvas.drawCircle(Offset(rect.center.dx, rect.bottom - 4), 4.0, paint);
   }
 }
