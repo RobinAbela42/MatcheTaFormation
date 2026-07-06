@@ -58,7 +58,7 @@ class _FormationEditState extends State<FormationEdit> {
             children: [
               IconButton(
                 onPressed: widget.onClose,
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 255, 255, 255)),
               ),
               const SizedBox(width: 8),
               Text(
@@ -179,7 +179,7 @@ class _FormationAddState extends State<FormationAdd> {
             children: [
               IconButton(
                 onPressed: widget.onClose,
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 255, 255, 255)),
               ),
               const SizedBox(width: 8),
               Text(
@@ -210,7 +210,6 @@ class _FormationAddState extends State<FormationAdd> {
             CheckboxListTile(
               title: Text(level.label),
               value: _selectedLevels.any((l) => l.id == level.id),
-              // value: true,
               onChanged: (selected) {
                 setState(() {
                   if (selected == true) {
@@ -224,7 +223,6 @@ class _FormationAddState extends State<FormationAdd> {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              //Insert formation into the database
               DatabaseHelper().insertFormation(
                 Formation(
                   id: null,

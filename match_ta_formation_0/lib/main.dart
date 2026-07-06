@@ -85,6 +85,16 @@ class MyApp extends StatelessWidget {
               ),
             ],
           ),
+          titleLarge: TextStyle(
+            color: Color.fromARGB(255, 255, 255, 255),
+            shadows: [
+              Shadow(
+                offset: Offset(1.0, 1.0),
+                blurRadius: 2.0,
+                color: Color.fromARGB(255, 0, 0, 0),
+              ),
+            ],
+          ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
@@ -99,6 +109,11 @@ class MyApp extends StatelessWidget {
               borderRadius: BorderRadius.circular(10.0),
             ),
           ),
+        ),
+        listTileTheme: ListTileThemeData(
+          style: ListTileStyle.list,
+          textColor: Color.fromARGB(255, 255, 255, 255),
+          
         ),
         
         tabBarTheme: TabBarThemeData(

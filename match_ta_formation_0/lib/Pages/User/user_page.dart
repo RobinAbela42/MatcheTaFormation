@@ -30,6 +30,8 @@ class _UserPageState extends State<UserPage> {
     time: null,
     category: null,
   );
+
+  // Claude : 
   
 
   /// Returns true if every response in [situation] that has formations
@@ -195,6 +197,8 @@ class _UserPageState extends State<UserPage> {
     return selected;
   }
 
+  // Fin Claude
+
   //Jeu de test
   @override
   Widget build(BuildContext context) {
@@ -211,7 +215,7 @@ class _UserPageState extends State<UserPage> {
           }
           if (currentSituation != null) {
             return SwipeCard(situation: currentSituation!, onSwiped: (response) {
-              // Handle the swipe action here
+              // Handle the swipe action
               setState(() {
                 if (sessionCounter < currentSessionSituations.length - 1) {
                   sessionCounter++;
@@ -222,9 +226,11 @@ class _UserPageState extends State<UserPage> {
                     ),
                   );
                 } else {
-                  // All situations have been swiped, handle end of session
+                  // Handle end of session
                   currentSituation = null;
-                  // For example, navigate to a results page or show a message
+                  currentSessionFormations.clear();
+                  sessionCounter = 0;
+                  selectedLevel = null;
                 }
               });
             });

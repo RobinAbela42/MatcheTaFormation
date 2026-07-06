@@ -26,7 +26,7 @@ class _AdminLoginState extends State<AdminLogin> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Login'),
+        title: const Text('Admin Login', style: TextStyle(color: Color.fromARGB(255, 255, 255, 255))),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

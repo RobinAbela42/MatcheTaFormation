@@ -169,7 +169,7 @@ class _SituationEditState extends State<SituationEdit> {
             children: [
               IconButton(
                 onPressed: widget.onClose,
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 255, 255, 255)),
               ),
               const SizedBox(width: 8),
               Text(
@@ -475,7 +475,7 @@ class _SituationAddState extends State<SituationAdd> {
             children: [
               IconButton(
                 onPressed: widget.onClose,
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 255, 255, 255)),
               ),
               const SizedBox(width: 8),
               Text(
