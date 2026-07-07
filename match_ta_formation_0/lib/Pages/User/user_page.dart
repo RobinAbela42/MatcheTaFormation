@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:match_ta_formation_0/DataBase/link.dart';
 import 'package:path/path.dart';
+
+import 'result_page.dart';
 // import 'package:match_ta_formation_0/Pages/Admin/admin_page.dart';
 // import 'package:path/path.dart';
 
@@ -23,7 +25,8 @@ class _UserPageState extends State<UserPage> {
   List<Situation> currentSessionSituations = [];
   Situation? currentSituation;
   int sessionCounter = 0;
-  Map<Map<Formation, int>, int> currentSessionFormations = {};
+  Map<Formation, int> currentSessionFormations = {};
+  bool endOfSession = false;
   Result currentResult = Result(
     id: null,
     formations: [],
@@ -31,8 +34,9 @@ class _UserPageState extends State<UserPage> {
     category: null,
   );
 
-  // Claude : 
   
+
+  // Claude :
 
   /// Returns true if every response in [situation] that has formations
   /// contains at least one formation whose [Formation.levels] includes [level].
@@ -199,9 +203,27 @@ class _UserPageState extends State<UserPage> {
 
   // Fin Claude
 
-  //Jeu de test
+  /// Widget build method for the UserPage. Displays either the current situation [currentSituation]
+  /// from a list of situations [currentSessionSituations] get from [selectBalancedSituations] based on
+  /// the [selectedLevel] or a list of levels to choose from.
   @override
   Widget build(BuildContext context) {
+    if (endOfSession && currentSessionFormations.isNotEmpty) {
+      return ResultDisplay(
+        currentSessionFormations: currentSessionFormations,
+        onSessionEnded: () {
+          setState(() {
+            endOfSession = false;
+            currentSessionFormations.clear();
+            currentSessionSituations.clear();
+            currentSituation = null;
+            sessionCounter = 0;
+            selectedLevel = null;
+          });
+        },
+      );
+    }
+
     if (selectedLevel != null) {
       return FutureBuilder<List<Situation>>(
         future: DatabaseHelper().getSituations(),
@@ -213,28 +235,6 @@ class _UserPageState extends State<UserPage> {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
-          if (currentSituation != null) {
-            return SwipeCard(situation: currentSituation!, onSwiped: (response) {
-              // Handle the swipe action
-              setState(() {
-                if (sessionCounter < currentSessionSituations.length - 1) {
-                  sessionCounter++;
-                  currentSituation = currentSessionSituations[sessionCounter];
-                  currentSessionFormations.addEntries(
-                    response.formations!.entries.map(
-                      (entry) => MapEntry(<Formation,int>{entry.key: entry.value}, currentSessionFormations[<Formation,int>{entry.key: entry.value}] ?? 0 + entry.value),
-                    ),
-                  );
-                } else {
-                  // Handle end of session
-                  currentSituation = null;
-                  currentSessionFormations.clear();
-                  sessionCounter = 0;
-                  selectedLevel = null;
-                }
-              });
-            });
-          }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text('No situations found.'));
@@ -244,64 +244,91 @@ class _UserPageState extends State<UserPage> {
               selectedLevel!,
             );
             currentSituation = currentSessionSituations[sessionCounter];
-            return ElevatedButton(
-              onPressed: () {
-                setState(() {});
+            // return ElevatedButton(
+            //   onPressed: () {
+            //     setState(() {});
+            //   },
+            //   child: Text('Refresh'),
+            // );
+          }
+
+          if (currentSituation != null) {
+            return SwipeCard(
+              situation: currentSituation!,
+              onSwiped: (response) {
+                // Handle the swipe action
+                setState(() {
+                  if (sessionCounter < currentSessionSituations.length - 1) {
+                    sessionCounter++;
+                    currentSituation = currentSessionSituations[sessionCounter];
+                    if (response.formations != null &&
+                        response.formations!.isNotEmpty) {
+                      for (var form in response.formations!.entries) {
+                        stderr.writeln(
+                          'Formation: ${form.key.name}, Weight: ${form.value}',
+                        );
+                        if (currentSessionFormations.containsKey(form.key)) {
+                          currentSessionFormations[form.key] =
+                              currentSessionFormations[form.key]! + form.value;
+                        } else {
+                          currentSessionFormations.addEntries([
+                            MapEntry(form.key, form.value),
+                          ]);
+                        }
+                      }
+                    }
+                  } else {
+                    // Handle end of session
+                    endOfSession = true;
+                  }
+                });
               },
-              child: Text('Refresh'),
             );
           }
+          return const Center(child: Text('Where you been ?'));
         },
       );
     }
 
     return Padding(
       padding: EdgeInsetsGeometry.all(15),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Center(
-                    child: FutureBuilder<List<Level>>(
-                      future: DatabaseHelper().getLevels(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
-                        }
-                        if (snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
-                        }
-                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return const Text('No levels found.');
-                        } else {
-                          final levels = snapshot.data!;
-                          return ListView.builder(
-                            itemCount: levels.length,
-                            itemBuilder: (context, index) {
-                              final level = levels[index];
-                              return ElevatedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    selectedLevel = level;
-                                  });
-                                },
-                                child: Text(level.label),
-                              );
-                            },
-                          );
-                        }
-                      },
+      child: Center(
+        child: FutureBuilder<List<Level>>(
+          future: DatabaseHelper().getLevels(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            }
+            if (snapshot.hasError) {
+              return Text('Error: ${snapshot.error}');
+            }
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Text('No levels found.');
+            } else {
+              final levels = snapshot.data!;
+              return ListView.builder(
+                itemCount: levels.length,
+
+                itemBuilder: (context, index) {
+                  final level = levels[index];
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Center(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            selectedLevel = level;
+                          });
+                        },
+                        child: Text(level.label),
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+                  );
+                },
+              );
+            }
+          },
+        ),
       ),
     );
   }
