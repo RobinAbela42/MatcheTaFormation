@@ -83,6 +83,15 @@ class _ResultDisplayState extends State<ResultDisplay> {
 
           ElevatedButton(
             onPressed: () {
+              DatabaseHelper().insertResult(Result(
+                id: null,
+                formations: widget.currentSessionFormations.entries
+                    .map((entry) => entry.key)
+                    .toList(),
+                time: DateTime.now(),
+                category: null,
+              ));
+
               widget.onSessionEnded();
             },
             child: const Text('Start New Session'),

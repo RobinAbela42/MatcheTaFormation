@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'Pages/Admin/admin_login.dart';
 import 'Pages/User/user_page.dart';
+import 'package:provider/provider.dart';
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'dart:io';
+
+import 'Pages/provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +19,11 @@ void main() {
     // Change the global database factory
     databaseFactory = databaseFactoryFfi;
   }
-  runApp(const MyApp());
+
+  runApp(ChangeNotifierProvider(
+    create: (context) => CategoryProvider(),
+    child: const MyApp(),
+  ));
 }
 
 // Currently, this is the level of formations the user will face during this session. It will be updated after choosing it when choosing the level at the begining of the session.
@@ -42,6 +49,17 @@ class MyApp extends StatelessWidget {
           color: Color.fromARGB(255, 255, 43, 131),
           shape: ContinuousRectangleBorder(
             borderRadius: BorderRadius.circular(0.0),
+          ),
+        ),
+        dropdownMenuTheme: DropdownMenuThemeData(
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            labelStyle: TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
+            fillColor: Color.fromARGB(255, 255, 43, 131),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.0),
+              borderSide: BorderSide.none,
+            ),
           ),
         ),
         textTheme: TextTheme(

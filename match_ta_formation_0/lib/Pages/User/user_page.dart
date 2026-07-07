@@ -112,7 +112,7 @@ class _UserPageState extends State<UserPage> {
   List<Situation> selectBalancedSituations(
     List<Situation> situations,
     Level level, {
-    int count = 12,
+    int count = 4,
     Random? random,
   }) {
     final rng = random ?? Random();
@@ -212,7 +212,7 @@ class _UserPageState extends State<UserPage> {
       return ResultDisplay(
         currentSessionFormations: currentSessionFormations,
         onSessionEnded: () {
-          setState(() {
+          setState(() {            
             endOfSession = false;
             currentSessionFormations.clear();
             currentSessionSituations.clear();
@@ -244,12 +244,6 @@ class _UserPageState extends State<UserPage> {
               selectedLevel!,
             );
             currentSituation = currentSessionSituations[sessionCounter];
-            // return ElevatedButton(
-            //   onPressed: () {
-            //     setState(() {});
-            //   },
-            //   child: Text('Refresh'),
-            // );
           }
 
           if (currentSituation != null) {
@@ -285,7 +279,7 @@ class _UserPageState extends State<UserPage> {
               },
             );
           }
-          return const Center(child: Text('Where you been ?'));
+          return const Center(child: Text('Nothing to display now.'));
         },
       );
     }

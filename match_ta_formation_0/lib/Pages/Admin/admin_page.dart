@@ -3,8 +3,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:match_ta_formation_0/Pages/Admin/formation_admin_page.dart';
-import 'package:match_ta_formation_0/DataBase/link.dart';
+import 'package:match_ta_formation_0/Pages/Admin/category_picker_admin.dart';
+import 'package:match_ta_formation_0/DataBase/link.dart' as lnk;
 import 'package:match_ta_formation_0/Pages/Admin/situation_admin_page.dart';
+import 'package:provider/provider.dart';
+
+import '../../Pages/provider.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -14,12 +18,22 @@ class AdminPage extends StatefulWidget {
 }
 
 class _AdminPageState extends State<AdminPage> {
+  void _initializeCategory(lnk.Category cat) {
+    lnk.Category category = cat;
+
+    // Update the provider without triggering a rebuild here (listen: false)
+    Provider.of<CategoryProvider>(
+      context,
+      listen: false,
+    ).selectCategory(category);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Admin Page')),
       body: DefaultTabController(
-        length: 3,
+        length: 4,
         child: Column(
           children: [
             const TabBar(
@@ -27,6 +41,7 @@ class _AdminPageState extends State<AdminPage> {
                 Tab(text: 'Situations'),
                 Tab(text: 'Formations'),
                 Tab(text: 'Resultats'),
+                Tab(text: 'Categories'),
               ],
             ),
             Expanded(
@@ -35,6 +50,7 @@ class _AdminPageState extends State<AdminPage> {
                   SituationAdminPage(),
                   FormationAdminPage(),
                   ResultAdminPage(),
+                  CategoryPickerAdmin(),
                 ],
               ),
             ),
@@ -54,13 +70,13 @@ class SituationAdminPage extends StatefulWidget {
 }
 
 class _SituationAdminPageState extends State<SituationAdminPage> {
-  final databaseHelper = DatabaseHelper();
-  Situation? _selectedSituation;
+  final databaseHelper = lnk.DatabaseHelper();
+  lnk.Situation? _selectedSituation;
   bool _isAddingSituation = false;
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Situation>>(
+    return FutureBuilder<List<lnk.Situation>>(
       future: databaseHelper.getSituations(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -126,10 +142,8 @@ class _SituationAdminPageState extends State<SituationAdminPage> {
                       });
                     },
                     onDelete: () async {
-                      await DatabaseHelper().deleteSituation(s);
-                      setState(() {
-                        
-                      });
+                      await lnk.DatabaseHelper().deleteSituation(s);
+                      setState(() {});
                     },
                   );
                 },
@@ -189,8 +203,7 @@ class SituationCard extends StatelessWidget {
                 ),
               ),
 
-              ElevatedButton(onPressed: onDelete
-              , child: Icon(Icons.delete)),
+              ElevatedButton(onPressed: onDelete, child: Icon(Icons.delete)),
             ],
           ),
         ),
@@ -209,8 +222,8 @@ class FormationAdminPage extends StatefulWidget {
 
 class _FormationAdminPageState extends State<FormationAdminPage> {
   // Instantiate the helper once, or manage it via dependency injection/initState
-  final databaseHelper = DatabaseHelper();
-  Formation? _selectedFormation;
+  final databaseHelper = lnk.DatabaseHelper();
+  lnk.Formation? _selectedFormation;
   bool _isAddingFormation = false;
 
   @override
@@ -228,7 +241,7 @@ class _FormationAdminPageState extends State<FormationAdminPage> {
       );
     }
 
-    return FutureBuilder<List<Formation>>(
+    return FutureBuilder<List<lnk.Formation>>(
       future: databaseHelper.getFormations(), // The async function
       builder: (context, snapshot) {
         // 1. Handle the loading state
@@ -281,7 +294,7 @@ class _FormationAdminPageState extends State<FormationAdminPage> {
                             });
                           },
                           onDelete: () async {
-                            await DatabaseHelper().deleteFormation(f);
+                            await lnk.DatabaseHelper().deleteFormation(f);
                             setState(() {});
                           },
                         );

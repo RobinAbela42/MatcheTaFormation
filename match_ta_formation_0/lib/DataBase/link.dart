@@ -152,7 +152,7 @@ class Admin {
 }
 
 class Category {
-  final int id;
+  final int? id;
   final String label;
 
   const Category({required this.id, required this.label});
@@ -666,5 +666,30 @@ class DatabaseHelper {
         );
       }
     });
+  }
+
+  Future<void> deleteCategory(Category category) async {
+
+    final db = await database;
+
+    await db.transaction((txn) async {
+      await txn.delete(
+        'Category',
+        where: 'IdCategory = ?',
+        whereArgs: [category.id],
+      );
+    });
+  }
+
+  Future<List<Category>> getCategories() async {
+    final db = await database;
+    final List<Map<String, Object?>> categoryMaps = await db.query(
+      'Category',
+    );
+    return [
+      for (final {'IdCategory': id as int, 'Label': label as String}
+          in categoryMaps)
+        Category(id: id, label: label),
+    ];
   }
 }
