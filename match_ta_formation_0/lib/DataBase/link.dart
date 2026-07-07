@@ -165,6 +165,14 @@ class Category {
   String toString() {
     return 'Category(id: $id, label: $label)';
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Category && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class Level {
