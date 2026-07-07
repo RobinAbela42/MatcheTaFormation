@@ -18,6 +18,7 @@ class AdminPage extends StatefulWidget {
 }
 
 class _AdminPageState extends State<AdminPage> {
+  // ignore: unused_element
   void _initializeCategory(lnk.Category cat) {
     lnk.Category category = cat;
 

@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../../DataBase/link.dart';
 
 class ResultDisplay extends StatefulWidget {
-  Map<Formation, int> currentSessionFormations;
+  final Map<Formation, int> currentSessionFormations;
   final void Function() onSessionEnded;
 
-  ResultDisplay({
+  const ResultDisplay({
     super.key,
     required this.currentSessionFormations,
     required this.onSessionEnded,

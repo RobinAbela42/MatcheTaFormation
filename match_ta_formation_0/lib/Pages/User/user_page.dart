@@ -7,7 +7,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:match_ta_formation_0/DataBase/link.dart';
-import 'package:path/path.dart';
 
 import 'result_page.dart';
 // import 'package:match_ta_formation_0/Pages/Admin/admin_page.dart';
