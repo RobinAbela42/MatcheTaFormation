@@ -105,7 +105,7 @@ class Formation {
 
 class Result {
   final int? id;
-  final Map<Formation,int>? formations;
+  final Map<Formation, int>? formations;
   final DateTime? time;
   final Category? category;
 
@@ -119,7 +119,8 @@ class Result {
   Map<String, Object?> toMap() {
     return {
       'IdResult': id,
-      'Time': time?.toIso8601String(), // Formatted safely for SQL text/datetime storage
+      'Time': time
+          ?.toIso8601String(), // Formatted safely for SQL text/datetime storage
       'IdCategory':
           category?.id, // Foreign Key relation resolved from the object
     };
@@ -341,14 +342,15 @@ class DatabaseHelper {
 
     await db.transaction((txn) async {
       // 1. Insert core Result row (handles Category foreign key automatically)
-      final int resultId = await txn.insert(
-        'Result', {
-          'Date': result.time != null ? result.time!.toIso8601String().split('T')[0] : DateTime.now().toIso8601String().split('T')[0],
-          'Time': result.time != null ? result.time!.toIso8601String().split('T')[1] : DateTime.now().toIso8601String().split('T')[1],
-          'IdCategory' : result.category!.id
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      final int resultId = await txn.insert('Result', {
+        'Date': result.time != null
+            ? result.time!.toIso8601String().split('T')[0]
+            : DateTime.now().toIso8601String().split('T')[0],
+        'Time': result.time != null
+            ? result.time!.toIso8601String().split('T')[1]
+            : DateTime.now().toIso8601String().split('T')[1],
+        'IdCategory': result.category!.id,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
 
       // 2. Loop and link inside the "FormationResult" junction table
       for (var formation in result.formations!.entries) {
@@ -601,7 +603,8 @@ class DatabaseHelper {
                               )['Description']
                               as String,
                       levels: [
-                        for (final {'IdLevel': levelId as int} in describeMaps.where(
+                        for (final {'IdLevel': levelId as int}
+                            in describeMaps.where(
                               (d) => d['IdFormation'] == formationId,
                             ))
                           Level(
@@ -636,6 +639,80 @@ class DatabaseHelper {
           in responseTypeMaps)
         ResponseType(id: id, label: label),
     ];
+  }
+
+  Future<List<Result>> getResult() async {
+    final db = await database;
+    final List<Map<String, Object?>> resultMap = await db.query('Result');
+    final List<Map<String, Object?>> formationResultMap = await db.query(
+      'FormationResult',
+    );
+    final List<Map<String, Object?>> categoryMap = await db.query(
+      'Category',
+      where: 'IdCategory',
+    );
+    final List<Map<String, Object?>> describeMaps = await db.query('Describe');
+    final List<Map<String, Object?>> levelMaps = await db.query('Level');
+
+    final List<Result> results = [];
+    for (final {
+          'IdResult': idResult as int,
+          'Time': time as String,
+          'Date': date as String,
+          'IdCategory': idCategory as int,
+        }
+        in resultMap) {
+      results.add(
+        Result(
+          id: idResult,
+          time: DateTime.parse('$date $time'),
+          formations: <Formation, int>{
+            for (final {'IdFormation': idFormation as int}
+                in formationResultMap.where((rf) => rf['IdResult'] == idResult))
+              Formation(
+                id: idFormation,
+                name:
+                    formationResultMap.firstWhere(
+                          (f) => f['IdFormation'] == idFormation,
+                        )['Name']
+                        as String,
+                description:
+                    formationResultMap.firstWhere(
+                          (f) => f['IdFormation'] == idFormation,
+                        )['Description']
+                        as String,
+                levels: [
+                  for (final {'IdLevel': levelId as int} in describeMaps.where(
+                    (d) => d['IdFormation'] == idFormation,
+                  ))
+                    Level(
+                      id: levelId,
+                      label:
+                          levelMaps.firstWhere(
+                                (l) => l['IdLevel'] == levelId,
+                              )['Label']
+                              as String,
+                    ),
+                ],
+              ): formationResultMap.firstWhere(
+                    (rf) =>
+                        rf['IdResult'] == idResult &&
+                        rf['IdFormation'] == idFormation,
+                  )['ResultWeight']
+                  as int,
+          },
+          category: Category(
+            id: idCategory,
+            label:
+                categoryMap.firstWhere(
+                      (c) => c['IdCategory'] == idCategory,
+                    )['Label']
+                    as String,
+          ),
+        ),
+      );
+    }
+    return [];
   }
 
   Future<void> deleteFormation(Formation formation) async {
@@ -681,7 +758,6 @@ class DatabaseHelper {
   }
 
   Future<void> deleteCategory(Category category) async {
-
     final db = await database;
 
     await db.transaction((txn) async {
@@ -695,9 +771,7 @@ class DatabaseHelper {
 
   Future<List<Category>> getCategories() async {
     final db = await database;
-    final List<Map<String, Object?>> categoryMaps = await db.query(
-      'Category',
-    );
+    final List<Map<String, Object?>> categoryMaps = await db.query('Category');
     return [
       for (final {'IdCategory': id as int, 'Label': label as String}
           in categoryMaps)

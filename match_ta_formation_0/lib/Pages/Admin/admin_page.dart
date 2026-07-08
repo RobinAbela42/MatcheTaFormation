@@ -359,8 +359,29 @@ class ResultAdminPage extends StatefulWidget {
 }
 
 class _ResultAdminPageState extends State<ResultAdminPage> {
+  final databaseHelper = lnk.DatabaseHelper();
+
   @override
   Widget build(BuildContext context) {
-    return Center(child: Text('Resultats content'));
+    return FutureBuilder<List<lnk.Result>>(
+      future: databaseHelper.getResult(),
+      builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        // 2. Handle errors if the database call fails
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        // 3. Handle the case where data is empty or missing
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('No formations found.'));
+        }
+
+        return const Center(child: Text('TEX'));
+      },
+    );
   }
 }
