@@ -6,9 +6,6 @@ import 'package:match_ta_formation_0/Pages/Admin/formation_admin_page.dart';
 import 'package:match_ta_formation_0/Pages/Admin/category_picker_admin.dart';
 import 'package:match_ta_formation_0/DataBase/link.dart' as lnk;
 import 'package:match_ta_formation_0/Pages/Admin/situation_admin_page.dart';
-import 'package:provider/provider.dart';
-
-import '../../Pages/provider.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -19,15 +16,6 @@ class AdminPage extends StatefulWidget {
 
 class _AdminPageState extends State<AdminPage> {
   // ignore: unused_element
-  void _initializeCategory(lnk.Category cat) {
-    lnk.Category category = cat;
-
-    // Update the provider without triggering a rebuild here (listen: false)
-    Provider.of<CategoryProvider>(
-      context,
-      listen: false,
-    ).selectCategory(category);
-  }
 
   @override
   Widget build(BuildContext context) {

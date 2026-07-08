@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:match_ta_formation_0/Pages/provider.dart';
+import 'package:provider/provider.dart';
 
-import '../../DataBase/link.dart';
+import '../../DataBase/link.dart' as lnk;
 
 class ResultDisplay extends StatefulWidget {
-  final Map<Formation, int> currentSessionFormations;
+  final Map<lnk.Formation, int> currentSessionFormations;
   final void Function() onSessionEnded;
 
   const ResultDisplay({
@@ -19,18 +21,16 @@ class ResultDisplay extends StatefulWidget {
 class _ResultDisplayState extends State<ResultDisplay> {
   @override
   Widget build(BuildContext context) {
-    Map<Formation, int> selectedFormations = {};
+    Map<lnk.Formation, int> selectedFormations = {};
     for (var form in widget.currentSessionFormations.entries) {
-      if(selectedFormations.isEmpty) {
+      if (selectedFormations.isEmpty) {
         selectedFormations.addEntries([MapEntry(form.key, form.value)]);
-      } else 
-      if (selectedFormations.values.first == form.value) {
+      } else if (selectedFormations.values.first == form.value) {
         selectedFormations.addEntries([MapEntry(form.key, form.value)]);
-      } else
-      if (selectedFormations.values.first < form.value) {
+      } else if (selectedFormations.values.first < form.value) {
         selectedFormations.clear();
         selectedFormations.addEntries([MapEntry(form.key, form.value)]);
-      } 
+      }
     }
     return Center(
       child: Column(
@@ -60,8 +60,11 @@ class _ResultDisplayState extends State<ResultDisplay> {
                   children: [
                     Icon(Icons.equalizer, color: Colors.green, size: 32),
                     SizedBox(width: 8),
-                    
-                    Text('Résultats de la session:', style: TextStyle(fontSize: 18)),
+
+                    Text(
+                      'Résultats de la session:',
+                      style: TextStyle(fontSize: 18),
+                    ),
                   ],
                 ),
                 const Text(
@@ -69,13 +72,15 @@ class _ResultDisplayState extends State<ResultDisplay> {
                   style: TextStyle(fontSize: 18),
                 ),
                 const SizedBox(height: 8),
-                ...selectedFormations.entries.map((entry) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Text(
-                        '${entry.key.name}: ${entry.value}',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    )),
+                ...selectedFormations.entries.map(
+                  (entry) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text(
+                      '${entry.key.name}: ${entry.value}',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
               ],
             ),
@@ -83,14 +88,14 @@ class _ResultDisplayState extends State<ResultDisplay> {
 
           ElevatedButton(
             onPressed: () {
-              // DatabaseHelper().insertResult(Result(
-              //   id: null,
-              //   formations: widget.currentSessionFormations.entries
-              //       .map((entry) => entry.key)
-              //       .toList(),
-              //   time: DateTime.now(),
-              //   category: null,
-              // ));
+              lnk.DatabaseHelper().insertResult(
+                lnk.Result(
+                  id: null,
+                  formations: selectedFormations,
+                  time: DateTime.now(),
+                  category: Provider.of<CategoryProvider>(context, listen: false).selectedCategory,
+                ),
+              );
 
               widget.onSessionEnded();
             },

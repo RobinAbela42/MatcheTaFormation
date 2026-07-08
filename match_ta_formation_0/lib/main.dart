@@ -198,6 +198,8 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.miniEndTop,
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.secondary,
         onPressed: () {
           Navigator.push(
             context,

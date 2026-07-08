@@ -26,12 +26,6 @@ class _UserPageState extends State<UserPage> {
   int sessionCounter = 0;
   Map<Formation, int> currentSessionFormations = {};
   bool endOfSession = false;
-  Result currentResult = Result(
-    id: null,
-    formations: [],
-    time: null,
-    category: null,
-  );
 
   
 

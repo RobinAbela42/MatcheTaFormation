@@ -5,6 +5,7 @@ import 'dart:async';
 
 // import 'package:flutter/foundation.dart';
 // import 'package:flutter/semantics.dart';
+import 'package:flutter/material.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -104,7 +105,7 @@ class Formation {
 
 class Result {
   final int? id;
-  final List<Formation>? formations;
+  final Map<Formation,int>? formations;
   final DateTime? time;
   final Category? category;
 
@@ -340,18 +341,21 @@ class DatabaseHelper {
 
     await db.transaction((txn) async {
       // 1. Insert core Result row (handles Category foreign key automatically)
-      await txn.insert(
-        'Result',
-        result.toMap(),
+      final int resultId = await txn.insert(
+        'Result', {
+          'Date': result.time != null ? result.time!.toIso8601String().split('T')[0] : DateTime.now().toIso8601String().split('T')[0],
+          'Time': result.time != null ? result.time!.toIso8601String().split('T')[1] : DateTime.now().toIso8601String().split('T')[1],
+          'IdCategory' : result.category!.id
+        },
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
       // 2. Loop and link inside the "FormationResult" junction table
-      for (var formation in result.formations ?? []) {
+      for (var formation in result.formations!.entries) {
         await txn.insert('FormationResult', {
-          'IdResult': result.id,
-          'IdFormation': formation.id,
-          'ResultWeight': 0, // Fallback default weight assignment
+          'IdResult': resultId,
+          'IdFormation': formation.key.id,
+          'ResultWeight': formation.value, // Fallback default weight assignment
         }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
     });

@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:match_ta_formation_0/DataBase/link.dart';
+import 'package:provider/provider.dart';
+
+import '../../Pages/provider.dart';
 
 class CategoryPickerAdmin extends StatefulWidget {
   const CategoryPickerAdmin({super.key});
@@ -23,6 +26,18 @@ class _CategoryPickerAdminState extends State<CategoryPickerAdmin> {
       categories = DatabaseHelper().getCategories();
     });
   }
+
+    void _initializeCategory(Category cat) {
+    Category category = cat;
+
+    // Update the provider without triggering a rebuild here (listen: false)
+    Provider.of<CategoryProvider>(
+      context,
+      listen: false,
+    ).selectCategory(category);
+  }
+
+
 
   @override
   void initState() {
@@ -80,6 +95,7 @@ class _CategoryPickerAdminState extends State<CategoryPickerAdmin> {
                 onChanged: (Category? newVal) {
                   setState(() {
                     _selectedCategory = newVal;
+                    _initializeCategory(_selectedCategory!);
                   });
                 },
               );
@@ -102,9 +118,9 @@ class _CategoryPickerAdminState extends State<CategoryPickerAdmin> {
             ElevatedButton(
               onPressed: () {
                 setState(() {
-                  stderr.writeln(
-                    'Adding new category: ${_newCategoryController.text}',
-                  );
+                  // stderr.writeln(
+                  //   'Adding new category: ${_newCategoryController.text}',
+                  // );
                   DatabaseHelper().insertCategory(
                     Category(id: null, label: _newCategoryController.text),
                   );
