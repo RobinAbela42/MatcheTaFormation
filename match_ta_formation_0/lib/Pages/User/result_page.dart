@@ -68,7 +68,7 @@ class _ResultDisplayState extends State<ResultDisplay> {
                   ],
                 ),
                 const Text(
-                  'Formations encountered during this session:',
+                  'Les formations avec le plus de matches : ',
                   style: TextStyle(fontSize: 18),
                 ),
                 const SizedBox(height: 8),

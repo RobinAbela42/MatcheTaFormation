@@ -366,7 +366,7 @@ class _ResultAdminPageState extends State<ResultAdminPage> {
     return FutureBuilder<List<lnk.Result>>(
       future: databaseHelper.getResult(),
       builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 

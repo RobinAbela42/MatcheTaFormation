@@ -7,9 +7,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:match_ta_formation_0/DataBase/link.dart';
+import 'package:match_ta_formation_0/Pages/Admin/admin_login.dart';
 
 import 'result_page.dart';
-// import 'package:match_ta_formation_0/Pages/Admin/admin_page.dart';
+import 'package:match_ta_formation_0/Pages/Admin/admin_page.dart';
 // import 'package:path/path.dart';
 
 class UserPage extends StatefulWidget {
@@ -27,7 +28,7 @@ class _UserPageState extends State<UserPage> {
   Map<Formation, int> currentSessionFormations = {};
   bool endOfSession = false;
 
-  
+  // ... (Keep your helper methods like _isEligibleForLevel, selectBalancedSituations, etc.) ...
 
   // Claude :
 
@@ -196,16 +197,16 @@ class _UserPageState extends State<UserPage> {
 
   // Fin Claude
 
-  /// Widget build method for the UserPage. Displays either the current situation [currentSituation]
-  /// from a list of situations [currentSessionSituations] get from [selectBalancedSituations] based on
-  /// the [selectedLevel] or a list of levels to choose from.
   @override
   Widget build(BuildContext context) {
+    // We define the main content body dynamically based on state
+    Widget bodyContent;
+
     if (endOfSession && currentSessionFormations.isNotEmpty) {
-      return ResultDisplay(
+      bodyContent = ResultDisplay(
         currentSessionFormations: currentSessionFormations,
         onSessionEnded: () {
-          setState(() {            
+          setState(() {
             endOfSession = false;
             currentSessionFormations.clear();
             currentSessionSituations.clear();
@@ -215,20 +216,16 @@ class _UserPageState extends State<UserPage> {
           });
         },
       );
-    }
-
-    if (selectedLevel != null) {
-      return FutureBuilder<List<Situation>>(
+    } else if (selectedLevel != null) {
+      bodyContent = FutureBuilder<List<Situation>>(
         future: DatabaseHelper().getSituations(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
-
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text('No situations found.'));
           } else {
@@ -243,7 +240,6 @@ class _UserPageState extends State<UserPage> {
             return SwipeCard(
               situation: currentSituation!,
               onSwiped: (response) {
-                // Handle the swipe action
                 setState(() {
                   if (sessionCounter < currentSessionSituations.length - 1) {
                     sessionCounter++;
@@ -265,58 +261,107 @@ class _UserPageState extends State<UserPage> {
                       }
                     }
                   } else {
-                    // Handle end of session
                     endOfSession = true;
                   }
                 });
               },
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 16),
+                  Text(
+                    currentSituation!.description,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            currentSituation!.responses![0].description!,
+                          ),
+                        ),
+                        const SizedBox(height: 12, width: 12),
+                        Expanded(
+                          child: Text(
+                            currentSituation!.responses![1].description!,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             );
           }
           return const Center(child: Text('Nothing to display now.'));
         },
       );
+    } else {
+      // Default level selection view
+      bodyContent = Padding(
+        padding: const EdgeInsets.all(
+          15.0,
+        ), // Fixed compile error: EdgeInsetsGeometry.all -> EdgeInsets.all
+        child: Center(
+          child: FutureBuilder<List<Level>>(
+            future: DatabaseHelper().getLevels(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const CircularProgressIndicator();
+              } else if (snapshot.hasError) {
+                return Text('Error: ${snapshot.error}');
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Text('No levels found.');
+              } else {
+                final levels = snapshot.data!;
+                return ListView.builder(
+                  itemCount: levels.length,
+                  itemBuilder: (context, index) {
+                    final level = levels[index];
+                    return Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Center(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              selectedLevel = level;
+                            });
+                          },
+                          child: Text(level.label),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
+            },
+          ),
+        ),
+      );
     }
 
-    return Padding(
-      padding: EdgeInsetsGeometry.all(15),
-      child: Center(
-        child: FutureBuilder<List<Level>>(
-          future: DatabaseHelper().getLevels(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const CircularProgressIndicator();
-            }
-            if (snapshot.hasError) {
-              return Text('Error: ${snapshot.error}');
-            }
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Text('No levels found.');
-            } else {
-              final levels = snapshot.data!;
-              return ListView.builder(
-                itemCount: levels.length,
-
-                itemBuilder: (context, index) {
-                  final level = levels[index];
-                  return Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Center(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            selectedLevel = level;
-                          });
-                        },
-                        child: Text(level.label),
-                      ),
-                    ),
-                  );
-                },
-              );
-            }
-          },
-        ),
+    // Wrap the entire widget output in a Scaffold so the theme applies!
+    return Scaffold(
+      // Optional: Add the admin button here too if you want it on the UserPage!
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndTop,
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.secondary,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLogin()),
+          );
+        },
+        tooltip: 'Admin page',
+        child: const Icon(Icons.account_circle),
       ),
+      body: bodyContent,
     );
   }
 }
@@ -434,27 +479,185 @@ class _SwipeCardState extends State<SwipeCard>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SizedBox(height: 16),
-
         Text(
-          widget.situation.description,
+          'Default content of ',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
-        SizedBox(height: 8),
-        Expanded(
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(widget.situation.responses![0].description!),
-              ),
-              SizedBox(height: 12, width: 12),
-              Expanded(
-                child: Text(widget.situation.responses![1].description!),
-              ),
-            ],
-          ),
-        ),
       ],
+    );
+  }
+}
+
+class OnboardingScreen extends StatefulWidget {
+  const OnboardingScreen({super.key});
+
+  @override
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
+}
+
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  late final PageController _pageController;
+  int _currentPage = 0;
+
+  // Define your steps as isolated, reusable widgets
+  final List<Widget> _tutorialSteps = [
+    const TutorialStepWidget(
+      title: 'Bienvenue sur Matche Ta Formation !',
+      description: 'placeholder',
+      icon: Icons.waving_hand,
+    ),
+    const TutorialStepWidget(
+      title: 'Comment ça marche ?',
+      description: 'placeholder',
+      icon: Icons.explore,
+    ),
+    const TutorialStepWidget(
+      title: 'Secondaire ? Tertiaire ?',
+      description: 'placeholder',
+      icon: Icons.question_mark_rounded,
+    ),
+    const TutorialStepWidget(
+      title: 'C\'est parti !',
+      description: 'placeholder',
+      icon: Icons.rocket_launch,
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onNextPressed() {
+    if (_currentPage < _tutorialSteps.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      _completeOnboarding();
+    }
+  }
+
+  void _onPreviousPressed() {
+    if (_currentPage <= _tutorialSteps.length - 1) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _completeOnboarding() {
+    // 1. Write to SharedPreferences here: SharedPreferences.setBool('isFirstRun', false)
+    // 2. Clear stack and navigate to main experience
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => const UserPage()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // The PageView handles the step rendering and gestures
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() => _currentPage = index);
+                },
+                children: _tutorialSteps,
+              ),
+            ),
+            // Bottom navigation bar (Indicators + Action Button)
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Visual page indicator (dots)
+                  Row(
+                    children: List.generate(
+                      _tutorialSteps.length,
+                      (index) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.only(right: 8),
+                        height: 8,
+                        width: _currentPage == index ? 24 : 8,
+                        decoration: BoxDecoration(
+                          color: _currentPage == index
+                              ? Colors.blue
+                              : Colors.grey,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Action Button
+                  if (_currentPage != 0)
+                    ElevatedButton(
+                      onPressed: _onPreviousPressed,
+                      child: Text('Previous'),
+                    ),
+                  ElevatedButton(
+                    onPressed: _onNextPressed,
+                    child: Text(
+                      _currentPage == _tutorialSteps.length - 1
+                          ? 'Get Started'
+                          : 'Next',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Dummy widget representing individual tutorial steps
+class TutorialStepWidget extends StatelessWidget {
+  final String title;
+  final String description;
+  final IconData icon;
+
+  const TutorialStepWidget({
+    super.key,
+    required this.title,
+    required this.description,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(40.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 100, color: Colors.blue),
+          const SizedBox(height: 40),
+          Text(title, style: Theme.of(context).textTheme.headlineMedium),
+          const SizedBox(height: 16),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+        ],
+      ),
     );
   }
 }

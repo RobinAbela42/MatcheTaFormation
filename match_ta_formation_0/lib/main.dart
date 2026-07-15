@@ -227,31 +227,31 @@ class _MyHomePageState extends State<MyHomePage> {
           // action in the IDE, or press "p" in the console), to see the
           // wireframe for each widget.
           mainAxisAlignment: .center,
-          children: [Expanded(child: UserPage())],
+          children: [Expanded(child: OnboardingScreen())],
         ),
       ),
     );
   }
 }
 
-class DotIndicator extends Decoration {
-  final Color color;
-  const DotIndicator({required this.color});
+// class DotIndicator extends Decoration {
+//   final Color color;
+//   const DotIndicator({required this.color});
 
-  @override
-  BoxPainter createBoxPainter([VoidCallback? onChanged]) {
-    return _DotPainter(color: color);
-  }
-}
+//   @override
+//   BoxPainter createBoxPainter([VoidCallback? onChanged]) {
+//     return _DotPainter(color: color);
+//   }
+// }
 
-class _DotPainter extends BoxPainter {
-  final Color color;
-  _DotPainter({required this.color});
+// class _DotPainter extends BoxPainter {
+//   final Color color;
+//   _DotPainter({required this.color});
 
-  @override
-  void paint(Canvas canvas, Offset offset, ImageConfiguration cfg) {
-    final rect = offset & cfg.size!;
-    final paint = Paint()..color = color;
-    canvas.drawCircle(Offset(rect.center.dx, rect.bottom - 4), 4.0, paint);
-  }
-}
+//   @override
+//   void paint(Canvas canvas, Offset offset, ImageConfiguration cfg) {
+//     final rect = offset & cfg.size!;
+//     final paint = Paint()..color = color;
+//     canvas.drawCircle(Offset(rect.center.dx, rect.bottom - 4), 4.0, paint);
+//   }
+// }
