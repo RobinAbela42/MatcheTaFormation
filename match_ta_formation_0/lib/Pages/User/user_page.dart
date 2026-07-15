@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:match_ta_formation_0/DataBase/link.dart';
 import 'package:match_ta_formation_0/Pages/Admin/admin_login.dart';
+import 'package:match_ta_formation_0/main.dart';
 
 import 'result_page.dart';
 import 'package:match_ta_formation_0/Pages/Admin/admin_page.dart';
@@ -237,64 +238,68 @@ class _UserPageState extends State<UserPage> {
           }
 
           if (currentSituation != null) {
-            return SwipeCard(
-              situation: currentSituation!,
-              onSwiped: (response) {
-                setState(() {
-                  if (sessionCounter < currentSessionSituations.length - 1) {
-                    sessionCounter++;
-                    currentSituation = currentSessionSituations[sessionCounter];
-                    if (response.formations != null &&
-                        response.formations!.isNotEmpty) {
-                      for (var form in response.formations!.entries) {
-                        stderr.writeln(
-                          'Formation: ${form.key.name}, Weight: ${form.value}',
-                        );
-                        if (currentSessionFormations.containsKey(form.key)) {
-                          currentSessionFormations[form.key] =
-                              currentSessionFormations[form.key]! + form.value;
-                        } else {
-                          currentSessionFormations.addEntries([
-                            MapEntry(form.key, form.value),
-                          ]);
+            return ZoomedInWidget(
+              child: SwipeCard(
+                situation: currentSituation!,
+                onSwiped: (response) {
+                  setState(() {
+                    if (sessionCounter < currentSessionSituations.length - 1) {
+                      sessionCounter++;
+                      currentSituation =
+                          currentSessionSituations[sessionCounter];
+                      if (response.formations != null &&
+                          response.formations!.isNotEmpty) {
+                        for (var form in response.formations!.entries) {
+                          stderr.writeln(
+                            'Formation: ${form.key.name}, Weight: ${form.value}',
+                          );
+                          if (currentSessionFormations.containsKey(form.key)) {
+                            currentSessionFormations[form.key] =
+                                currentSessionFormations[form.key]! +
+                                form.value;
+                          } else {
+                            currentSessionFormations.addEntries([
+                              MapEntry(form.key, form.value),
+                            ]);
+                          }
                         }
                       }
+                    } else {
+                      endOfSession = true;
                     }
-                  } else {
-                    endOfSession = true;
-                  }
-                });
-              },
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 16),
-                  Text(
-                    currentSituation!.description,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                  });
+                },
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 16),
+                    Text(
+                      currentSituation!.description,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            currentSituation!.responses![0].description!,
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              currentSituation!.responses![0].description!,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 12, width: 12),
-                        Expanded(
-                          child: Text(
-                            currentSituation!.responses![1].description!,
+                          const SizedBox(height: 12, width: 12),
+                          Expanded(
+                            child: Text(
+                              currentSituation!.responses![1].description!,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           }

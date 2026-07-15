@@ -234,24 +234,59 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// class DotIndicator extends Decoration {
-//   final Color color;
-//   const DotIndicator({required this.color});
+class ZoomedInWidget extends StatefulWidget {
+  final Widget child;
+  final Duration duration;
+  final Alignment alignment;
 
-//   @override
-//   BoxPainter createBoxPainter([VoidCallback? onChanged]) {
-//     return _DotPainter(color: color);
-//   }
-// }
+  const ZoomedInWidget({
+    super.key,
+    required this.child,
+    this.duration = const Duration(milliseconds: 400),
+    this.alignment = Alignment.center,
+  });
 
-// class _DotPainter extends BoxPainter {
-//   final Color color;
-//   _DotPainter({required this.color});
+  @override
+  State<ZoomedInWidget> createState() => _ZoomedInWidgetState();
+}
 
-//   @override
-//   void paint(Canvas canvas, Offset offset, ImageConfiguration cfg) {
-//     final rect = offset & cfg.size!;
-//     final paint = Paint()..color = color;
-//     canvas.drawCircle(Offset(rect.center.dx, rect.bottom - 4), 4.0, paint);
-//   }
-// }
+class _ZoomedInWidgetState extends State<ZoomedInWidget>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Set up the animation controller
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.duration,
+    );
+
+    // Apply the ease-in-out curve to a 0 to 1 scale range
+    _scaleAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeIn,
+    );
+
+    // Trigger the animation forward immediately on display
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      alignment: widget.alignment,
+      child: widget.child,
+    );
+  }
+}
