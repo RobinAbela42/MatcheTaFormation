@@ -739,22 +739,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<Widget> _tutorialSteps = [
     const TutorialStepWidget(
       title: 'Bienvenue sur Matche Ta Formation !',
-      description: 'Placeholder',
+      description: 'Découvre ta formation idéale grâce à des questions personnalisées ... Clique sur  \'Suivant\' !',
       icon: Icons.waving_hand,
     ),
     const TutorialStepWidget(
       title: 'Comment ça marche ?',
-      description: 'placeholder',
+      description: 'Tu sera invité à swiper les situations qui te feront face à gauche ou à droite, en fonction de la réponse qui te conviendra le mieux ...',
       icon: Icons.explore,
     ),
     const TutorialStepWidget(
       title: 'Secondaire ? Tertiaire ?',
-      description: 'placeholder',
+      description: 'JE NE SAIS PAS',
       icon: Icons.question_mark_rounded,
     ),
     const TutorialStepWidget(
       title: 'C\'est parti !',
-      description: 'placeholder',
+      description: 'Clique sur \'Continuer\' !',
       icon: Icons.rocket_launch,
     ),
   ];
@@ -851,16 +851,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             if (_currentPage != 0) ...[
                               ElevatedButton(
                                 onPressed: _onPreviousPressed,
-                                child: const Text('Previous'),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text('Précedent', style: TextStyle(fontSize: 34),),
+                                ),
                               ),
                               const SizedBox(width: 8),
                             ],
                             ElevatedButton(
                               onPressed: _onNextPressed,
-                              child: Text(
-                                _currentPage == _tutorialSteps.length - 1
-                                    ? 'Get Started'
-                                    : 'Next',
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(  
+                                  _currentPage == _tutorialSteps.length - 1
+                                      ? 'Commencer'
+                                      : 'Suivant',style: TextStyle(fontSize: 34)
+                                ),
                               ),
                             ),
                           ],
