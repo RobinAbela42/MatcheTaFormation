@@ -42,7 +42,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Gotham',
         scaffoldBackgroundColor: Color.fromARGB(255, 28, 42, 175),
         appBarTheme: AppBarTheme(
-          backgroundColor: Color.fromARGB(255, 255, 43, 131),
+          backgroundColor: Color(0xFFFF2B83),
           foregroundColor: Color.fromARGB(255, 255, 255, 255),
         ),
         cardTheme: CardThemeData(
@@ -64,14 +64,14 @@ class MyApp extends StatelessWidget {
         ),
         textTheme: TextTheme(
           bodyLarge: TextStyle(
-            color: Color.fromARGB(255, 255, 255, 255),
-            shadows: [
-              Shadow(
-                offset: Offset(1.0, 1.0),
-                blurRadius: 2.0,
-                color: Color.fromARGB(255, 0, 0, 0),
-              ),
-            ],
+            color: Color(0xFF1C2AAF),
+            // shadows: [
+            //   Shadow(
+            //     offset: Offset(1.0, 1.0),
+            //     blurRadius: 2.0,
+            //     color: Color.fromARGB(255, 0, 0, 0),
+            //   ),
+            // ], 
           ),
           bodyMedium: TextStyle(
             color: Color.fromARGB(255, 255, 255, 255),

@@ -349,7 +349,7 @@ class DatabaseHelper {
         'Time': result.time != null
             ? result.time!.toIso8601String().split('T')[1]
             : DateTime.now().toIso8601String().split('T')[1],
-        'IdCategory': result.category!.id,
+        'IdCategory': result.category?.id ?? 0,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
 
       // 2. Loop and link inside the "FormationResult" junction table
