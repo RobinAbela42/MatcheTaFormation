@@ -5,7 +5,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'dart:math';
+import 'dart:math'; 
 import 'package:match_ta_formation_0/DataBase/link.dart';
 import 'package:match_ta_formation_0/Pages/Admin/admin_login.dart';
 import 'package:match_ta_formation_0/main.dart';
@@ -108,7 +108,7 @@ class _UserPageState extends State<UserPage> {
 
     List<Situation> situations,
     Level level, {
-    int count = 4,
+    int count = 10,
     Random? random,
   }) {
     final rng = random ?? Random();

@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'Pages/Admin/admin_login.dart';
 import 'Pages/User/user_page.dart';
 import 'package:provider/provider.dart';
-
+import 'package:match_ta_formation_0/DataBase/link.dart';
+import 'package:flutter/services.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'dart:io';
 
 import 'Pages/provider.dart';
 
-void main() {
+// Make sure you have your imports for sqflite, provider, dart:io, etc.
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 3. Initialize sqflite for Desktop platforms
+  // Initialize sqflite for Desktop platforms
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     // Initialize FFI
     sqfliteFfiInit();
@@ -20,10 +23,25 @@ void main() {
     databaseFactory = databaseFactoryFfi;
   }
 
-  runApp(ChangeNotifierProvider(
-    create: (context) => CategoryProvider(),
-    child: const MyApp(),
-  ));
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
+  // 2. Await the database initialization here
+  final Database db = await DatabaseHelper.initDb();
+
+  // 3. Use MultiProvider to inject both your existing provider and the new database
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => CategoryProvider()),
+        Provider<Database>.value(value: db),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 // Currently, this is the level of formations the user will face during this session. It will be updated after choosing it when choosing the level at the begining of the session.
@@ -71,7 +89,7 @@ class MyApp extends StatelessWidget {
             //     blurRadius: 2.0,
             //     color: Color.fromARGB(255, 0, 0, 0),
             //   ),
-            // ], 
+            // ],
           ),
           bodyMedium: TextStyle(
             color: Color.fromARGB(255, 255, 255, 255),
@@ -131,13 +149,15 @@ class MyApp extends StatelessWidget {
         listTileTheme: ListTileThemeData(
           style: ListTileStyle.list,
           textColor: Color.fromARGB(255, 255, 255, 255),
-          
         ),
-        
+
         tabBarTheme: TabBarThemeData(
           unselectedLabelColor: Color.fromARGB(255, 255, 255, 255),
           indicator: UnderlineTabIndicator(
-            borderSide: BorderSide(width: 5.0, color: Color.fromARGB(255, 255, 43, 131)),
+            borderSide: BorderSide(
+              width: 5.0,
+              color: Color.fromARGB(255, 255, 43, 131),
+            ),
             insets: EdgeInsets.symmetric(horizontal: 16.0),
             borderRadius: BorderRadius.circular(2.0), // rounds the line ends
           ),
@@ -258,12 +278,9 @@ class _ZoomedInWidgetState extends State<ZoomedInWidget>
   @override
   void initState() {
     super.initState();
-    
+
     // Set up the animation controller
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
 
     // Apply the ease-in-out curve to a 0 to 1 scale range
     _scaleAnimation = CurvedAnimation(

@@ -67,9 +67,6 @@ flutter:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
   assets:
-   - assets/1x/main-screen-1.png
-   - assets/1x/Pink-bot-bar.png
-   - assets/1x/Bubble-top-left-1.png
    - assets/1x/Bubble-1.png
    - assets/1x/Bubble-2.png
    - assets/1x/Swipe-card.png
