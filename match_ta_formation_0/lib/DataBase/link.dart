@@ -219,19 +219,27 @@ void main() {
 
 class DatabaseHelper {
   static Future<Database> initDb() async {
-    // Get the device's standard directory for databases
+
     String dbPath = await getDatabasesPath();
     String path = join(dbPath, 'data.db');
 
-    // await deleteDatabase(path);
-    
-
     return await openDatabase(
       path,
-      version: 1, // Incrementing this later triggers the onUpgrade callback
+      version: 1,
       onCreate: (Database db, int version) async {
-        // 1. Run your table creation scripts
         String creationScript = '''
+DROP TABLE IF EXISTS Describe;
+DROP TABLE IF EXISTS FormationResult;
+DROP TABLE IF EXISTS ResponseFormation;
+DROP TABLE IF EXISTS Result;
+DROP TABLE IF EXISTS Response;
+DROP TABLE IF EXISTS Formation;
+DROP TABLE IF EXISTS Level;
+DROP TABLE IF EXISTS Category;
+DROP TABLE IF EXISTS ResponseType;
+DROP TABLE IF EXISTS Situation;
+DROP TABLE IF EXISTS Admin;
+
 
 CREATE TABLE Admin (
     IdAdmin INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -309,7 +317,6 @@ CREATE TABLE Describe (
 );
         ''';
 
-        // 2. Inject any initial seed data
         String insertScriptBase = '''
 INSERT INTO Admin (Login, Hash) 
 VALUES ('admin', 'matche'),

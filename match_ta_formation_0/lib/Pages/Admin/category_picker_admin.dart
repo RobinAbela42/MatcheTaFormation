@@ -72,7 +72,7 @@ class _CategoryPickerAdminState extends State<CategoryPickerAdmin> {
               } else if (snapshot.hasError) {
                 return const Text('Error loading categories');
               } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return const Text('No categories available');
+                return const Text('Aucune catégorie disponible');
               }
 
               final cats = snapshot.data!;
@@ -107,8 +107,9 @@ class _CategoryPickerAdminState extends State<CategoryPickerAdmin> {
               padding: const EdgeInsets.all(8.0),
               child: TextField(
                 controller: _newCategoryController,
+                style: Theme.of(context).textTheme.titleLarge,
                 decoration: const InputDecoration(
-                  labelText: 'New Category Label',
+                  labelText: 'Label de la catégorie',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -150,7 +151,7 @@ class _CategoryPickerAdminState extends State<CategoryPickerAdmin> {
                   _isAddingCategory = true;
                 });
               },
-              child: const Text('Ajouter une Category'),
+              child: const Text('Ajouter une Categorie'),
             ),
           SizedBox(height: 25),
           if (_selectedCategory != null)

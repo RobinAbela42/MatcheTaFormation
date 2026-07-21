@@ -177,7 +177,7 @@ class SituationCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.bodyLarge),
+                    Text(title, style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 8),
                     Text(
                       'Response 1: $response1',
@@ -192,7 +192,7 @@ class SituationCard extends StatelessWidget {
                 ),
               ),
 
-              ElevatedButton(onPressed: onDelete, child: Icon(Icons.delete)),
+              ElevatedButton(onPressed: onDelete, style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.white)), child: Icon(Icons.delete, color: Colors.red,)),
             ],
           ),
         ),
@@ -332,16 +332,16 @@ class FormationCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.bodyLarge),
+                    Text(title, style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: Theme.of(context).textTheme.bodyLarge,
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
                   ],
                 ),
               ),
-              ElevatedButton(onPressed: onDelete, child: Icon(Icons.delete)),
+              ElevatedButton(onPressed: onDelete, style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.white)), child: Icon(Icons.delete, color: Colors.red,),),
             ],
           ),
         ),

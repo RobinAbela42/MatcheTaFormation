@@ -162,6 +162,13 @@ class MyApp extends StatelessWidget {
             borderRadius: BorderRadius.circular(2.0), // rounds the line ends
           ),
         ),
+
+        inputDecorationTheme: InputDecorationTheme(
+          fillColor: Colors.amber,
+          labelStyle: TextStyle(color: Colors.white),
+        ),
+
+        
         // This is the theme of your application.
         //
         // TRY THIS: Try running your application with "flutter run". You'll see
@@ -258,12 +265,14 @@ class ZoomedInWidget extends StatefulWidget {
   final Widget child;
   final Duration duration;
   final Alignment alignment;
+  final Curve curve;
 
   const ZoomedInWidget({
     super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 400),
     this.alignment = Alignment.center,
+    this.curve = Curves.easeIn
   });
 
   @override
@@ -285,7 +294,7 @@ class _ZoomedInWidgetState extends State<ZoomedInWidget>
     // Apply the ease-in-out curve to a 0 to 1 scale range
     _scaleAnimation = CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeIn,
+      curve: widget.curve,
     );
 
     // Trigger the animation forward immediately on display

@@ -29,12 +29,16 @@ class _AdminLoginState extends State<AdminLogin> {
         title: const Text('Admin Login', style: TextStyle(color: Color.fromARGB(255, 255, 255, 255))),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 250),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.center,
+          
           children: [
+            Text('Se connecter en tant qu\'Administrateur', style: TextStyle(fontSize: 25,),textAlign: TextAlign.center,),
+            SizedBox(height: 16,),
             TextField(
               controller: _usernameController,
+              style: Theme.of(context).textTheme.titleLarge,
               decoration: const InputDecoration(
                 labelText: 'Username',
                 border: OutlineInputBorder(),
@@ -43,6 +47,8 @@ class _AdminLoginState extends State<AdminLogin> {
             const SizedBox(height: 16),
             TextField(
               controller: _passwordController,
+              
+              style: Theme.of(context).textTheme.titleLarge,
               decoration: InputDecoration(
                 labelText: 'Password',
                 border: const OutlineInputBorder(),

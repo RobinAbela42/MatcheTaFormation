@@ -58,14 +58,24 @@ class _SituationEditState extends State<SituationEdit> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
-                      'Add Formation',
+                      'Ajouter une formation',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                        shadows: [],
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text('Select a formation from the list below.'),
+                    const Text(
+                      'Veuillez choisir une formation parmis toutes.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                        shadows: [],
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     FutureBuilder<List<Formation>>(
                       future: formations,
@@ -77,7 +87,7 @@ class _SituationEditState extends State<SituationEdit> {
                         }
                         final formationList = snapshot.data ?? <Formation>[];
                         if (formationList.isEmpty) {
-                          return const Text('No formations available.');
+                          return const Text('Aucune formation disponible.');
                         }
                         return Wrap(
                           children: [
@@ -169,7 +179,10 @@ class _SituationEditState extends State<SituationEdit> {
             children: [
               IconButton(
                 onPressed: widget.onClose,
-                icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 255, 255, 255)),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Color.fromARGB(255, 255, 255, 255),
+                ),
               ),
               const SizedBox(width: 8),
               Text(
@@ -182,6 +195,8 @@ class _SituationEditState extends State<SituationEdit> {
           const SizedBox(height: 16),
           TextField(
             controller: _descriptionController,
+
+            style: Theme.of(context).textTheme.titleLarge,
             maxLines: 5,
             decoration: const InputDecoration(
               labelText: 'Situation :',
@@ -212,6 +227,8 @@ class _SituationEditState extends State<SituationEdit> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: _responseControllers[index],
+
+                      style: Theme.of(context).textTheme.titleLarge,
                       maxLines: 3,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
@@ -236,7 +253,12 @@ class _SituationEditState extends State<SituationEdit> {
                       child: Icon(Icons.add),
                     ),
 
-                    if (widget.situation.responses?[index].formations?.isNotEmpty ??false) ...[
+                    if (widget
+                            .situation
+                            .responses?[index]
+                            .formations
+                            ?.isNotEmpty ??
+                        false) ...[
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -334,7 +356,7 @@ class _SituationAddState extends State<SituationAdd> {
         for (final responseType in responseTypes) {
           i++;
           final newResponse = Response(
-            id:i, 
+            id: i,
             type: responseType,
             description: '',
             formations: <Formation, int>{},
@@ -375,14 +397,24 @@ class _SituationAddState extends State<SituationAdd> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
-                      'Add Formation',
+                      'Ajouter une formation',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                        shadows: [],
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text('Select a formation from the list below.'),
+                    const Text(
+                      'Veuillez choisir une formation parmis toutes.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                        shadows: [],
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     FutureBuilder<List<Formation>>(
                       future: formations,
@@ -404,16 +436,22 @@ class _SituationAddState extends State<SituationAdd> {
                                 child: ElevatedButton(
                                   onPressed: () {
                                     setState(() {
-                                      final editingResponse = _isEditingResponseIndex;
+                                      final editingResponse =
+                                          _isEditingResponseIndex;
                                       if (editingResponse != null) {
-                                        final responseIndex = responses.indexWhere((response) => response.id == _isEditingResponseIndex);
+                                        final responseIndex = responses
+                                            .indexWhere(
+                                              (response) =>
+                                                  response.id ==
+                                                  _isEditingResponseIndex,
+                                            );
                                         if (responseIndex != -1) {
                                           responses[responseIndex].formations
-                                            ?.addEntries(
-                                              <MapEntry<Formation, int>>[
-                                                MapEntry(formation, 1),
-                                              ],
-                                            );
+                                              ?.addEntries(
+                                                <MapEntry<Formation, int>>[
+                                                  MapEntry(formation, 1),
+                                                ],
+                                              );
                                         }
                                       }
                                       _isEditingResponseIndex = null;
@@ -475,7 +513,10 @@ class _SituationAddState extends State<SituationAdd> {
             children: [
               IconButton(
                 onPressed: widget.onClose,
-                icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 255, 255, 255)),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Color.fromARGB(255, 255, 255, 255),
+                ),
               ),
               const SizedBox(width: 8),
               Text(
@@ -488,6 +529,8 @@ class _SituationAddState extends State<SituationAdd> {
           const SizedBox(height: 16),
           TextField(
             controller: _descriptionController,
+
+            style: Theme.of(context).textTheme.titleLarge,
             maxLines: 5,
             decoration: const InputDecoration(
               labelText: 'Situation :',
@@ -518,6 +561,8 @@ class _SituationAddState extends State<SituationAdd> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: _responseControllers[index],
+
+                      style: Theme.of(context).textTheme.titleLarge,
                       maxLines: 3,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
@@ -545,21 +590,20 @@ class _SituationAddState extends State<SituationAdd> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children:
-                            responses[index].formations!.entries
-                                .map(
-                                  (entry) => SituationFormationCard(
-                                    text: entry.key.name,
-                                    onDelete: () {
-                                      setState(() {
-                                        responses[index].formations?.remove(
-                                          entry.key,
-                                        );
-                                      });
-                                    },
-                                  ),
-                                )
-                                .toList(),
+                        children: responses[index].formations!.entries
+                            .map(
+                              (entry) => SituationFormationCard(
+                                text: entry.key.name,
+                                onDelete: () {
+                                  setState(() {
+                                    responses[index].formations?.remove(
+                                      entry.key,
+                                    );
+                                  });
+                                },
+                              ),
+                            )
+                            .toList(),
                       ),
                     ],
                   ],
@@ -567,6 +611,7 @@ class _SituationAddState extends State<SituationAdd> {
               ),
             ),
           ),
+          SizedBox(height : 16),
           ElevatedButton(
             onPressed: () {
               final updatedResponses = responses.asMap().entries.map((entry) {
@@ -592,6 +637,7 @@ class _SituationAddState extends State<SituationAdd> {
                 const SnackBar(content: Text('Situation added successfuly')),
               );
             },
+            
             child: const Text('Save'),
           ),
         ],

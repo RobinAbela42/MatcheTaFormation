@@ -58,7 +58,10 @@ class _FormationEditState extends State<FormationEdit> {
             children: [
               IconButton(
                 onPressed: widget.onClose,
-                icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 255, 255, 255)),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Color.fromARGB(255, 255, 255, 255),
+                ),
               ),
               const SizedBox(width: 8),
               Text(
@@ -70,6 +73,8 @@ class _FormationEditState extends State<FormationEdit> {
           const SizedBox(height: 16),
           TextField(
             controller: _nameController,
+
+            style: Theme.of(context).textTheme.titleLarge,
             decoration: const InputDecoration(
               labelText: 'Nom de la formation',
               border: OutlineInputBorder(),
@@ -78,6 +83,8 @@ class _FormationEditState extends State<FormationEdit> {
           const SizedBox(height: 12),
           TextField(
             controller: _descriptionController,
+
+            style: Theme.of(context).textTheme.titleLarge,
             maxLines: 4,
             decoration: const InputDecoration(
               labelText: 'Description',
@@ -125,14 +132,10 @@ class _FormationEditState extends State<FormationEdit> {
   }
 }
 
-
 class FormationAdd extends StatefulWidget {
   final VoidCallback onClose;
 
-  const FormationAdd({
-    super.key,
-    required this.onClose,
-  });
+  const FormationAdd({super.key, required this.onClose});
 
   @override
   State<FormationAdd> createState() => _FormationAddState();
@@ -179,7 +182,10 @@ class _FormationAddState extends State<FormationAdd> {
             children: [
               IconButton(
                 onPressed: widget.onClose,
-                icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 255, 255, 255)),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Color.fromARGB(255, 255, 255, 255),
+                ),
               ),
               const SizedBox(width: 8),
               Text(
@@ -191,6 +197,8 @@ class _FormationAddState extends State<FormationAdd> {
           const SizedBox(height: 16),
           TextField(
             controller: _nameController,
+
+            style: Theme.of(context).textTheme.titleLarge,
             decoration: const InputDecoration(
               labelText: 'Nom de la formation',
               border: OutlineInputBorder(),
@@ -199,6 +207,8 @@ class _FormationAddState extends State<FormationAdd> {
           const SizedBox(height: 12),
           TextField(
             controller: _descriptionController,
+
+            style: Theme.of(context).textTheme.titleLarge,
             maxLines: 4,
             decoration: const InputDecoration(
               labelText: 'Description',
@@ -233,7 +243,7 @@ class _FormationAddState extends State<FormationAdd> {
               );
 
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Formation added successfully')),
+                const SnackBar(content: Text('Formation ajoutée avec succes')),
               );
             },
             child: const Text('Save'),
