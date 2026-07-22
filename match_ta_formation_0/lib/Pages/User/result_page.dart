@@ -6,6 +6,47 @@ import '../../DataBase/link.dart' as lnk;
 
 import 'package:fl_chart/fl_chart.dart';
 
+/// Écran de fin de session affichant les résultats du "matching" de
+/// formation, calculés à partir de [currentSessionFormations] (map de
+/// [lnk.Formation] → poids cumulé, construite par [UserPage] au fil des
+/// réponses de l'utilisateur).
+///
+/// Propose deux vues, basculables via le bouton "Montrer toute les
+/// formations" / "Retourner sur le graph" (état [showFormations]) :
+/// - **Vue graphique (par défaut)** : détermine la ou les formation(s)
+///   "gagnante(s)" (celles ayant le poids maximal, stockées dans
+///   `selectedFormations`), les affiche sous forme de cartes en tête de
+///   page, puis un [BarChart] (package `fl_chart`) représentant le poids
+///   de **toutes** les formations de la session pour comparaison visuelle.
+///   Un bouton "Recommencer" enregistre le résultat en base via
+///   `lnk.DatabaseHelper().insertResult(...)` (avec la catégorie active
+///   récupérée via [CategoryProvider]) puis appelle [onSessionEnded] pour
+///   permettre au parent ([UserPage]) de réinitialiser la session.
+/// - **Vue liste** : présente l'ensemble des formations de la session
+///   (`entries`, non filtrées) sous forme de liste détaillée avec nom et
+///   description, pour consultation exhaustive avant de revenir au
+///   graphique.
+///
+/// Points d'attention pour les développeurs :
+/// - La logique de sélection des formations "gagnantes" (`selectedFormations`)
+///   est recalculée à **chaque** appel de `build` (boucle en début de
+///   méthode), ce qui est redondant : à extraire dans une méthode dédiée
+///   ou à calculer une seule fois (ex. dans `initState` ou via un
+///   `late final` recalculé uniquement quand `currentSessionFormations`
+///   change).
+/// - Cette logique de sélection suppose que `currentSessionFormations`
+///   n'est pas vide ; si c'est le cas, `selectedFormations` restera vide
+///   et le texte "Vous avez 0 matche" s'affichera — comportement à
+///   confirmer comme voulu.
+/// - `insertResult` est appelé uniquement au moment de cliquer sur
+///   "Recommencer" : si l'utilisateur ferme l'app ou navigue autrement
+///   avant ce clic, le résultat de la session ne sera jamais persisté.
+/// - Le bouton "Montrer toute les formations" contient une faute
+///   d'accord ("toute" → "toutes").
+/// - `_getMaxY` est une fonction locale redéfinie à chaque `build` :
+///   à extraire en méthode privée de la classe si des optimisations de
+///   performance sont nécessaires plus tard.
+
 class ResultDisplay extends StatefulWidget {
   final Map<lnk.Formation, int> currentSessionFormations;
   final void Function() onSessionEnded;

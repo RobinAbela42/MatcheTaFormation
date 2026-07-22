@@ -832,7 +832,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     const TutorialStepWidget(
       title: 'C\'est parti !',
-      description: 'Clique sur \'Continuer\' !',
+      description: 'Clique sur \'Commencer\' !',
       icon: Icons.rocket_launch,
     ),
   ];

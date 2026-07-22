@@ -219,7 +219,6 @@ void main() {
 
 class DatabaseHelper {
   static Future<Database> initDb() async {
-
     String dbPath = await getDatabasesPath();
     String path = join(dbPath, 'data.db');
 
@@ -571,8 +570,9 @@ INSERT INTO Describe (IdFormation, IdLevel) VALUES
         final tables = await db.rawQuery(
           "SELECT name FROM sqlite_master WHERE type='table'",
         );
-        debugPrint('✅ Tables created: ${tables.map((t) => t['name']).toList()}');
-
+        debugPrint(
+          '✅ Tables created: ${tables.map((t) => t['name']).toList()}',
+        );
       },
     );
   }
@@ -1002,76 +1002,112 @@ INSERT INTO Describe (IdFormation, IdLevel) VALUES
 
   Future<List<Result>> getResult() async {
     final db = await database;
-    final List<Map<String, Object?>> resultMap = await db.query('Result');
-    final List<Map<String, Object?>> formationResultMap = await db.query(
-      'FormationResult',
-    );
-    final List<Map<String, Object?>> categoryMap = await db.query(
-      'Category',
-      where: 'IdCategory',
-    );
-    final List<Map<String, Object?>> describeMaps = await db.query('Describe');
-    final List<Map<String, Object?>> levelMaps = await db.query('Level');
 
-    final List<Result> results = [];
-    for (final {
-          'IdResult': idResult as int,
-          'Time': time as String,
-          'Date': date as String,
-          'IdCategory': idCategory as int,
+    // 1. Query all tables
+    final resultMap = await db.query('Result');
+    final formationResultMap = await db.query('FormationResult');
+    final categoryMap = await db.query('Category');
+    final describeMaps = await db.query('Describe');
+    final levelMaps = await db.query('Level');
+    final formationMap = await db.query(
+      'Formation',
+    ); // <-- NEW: needed for actual Formation data
+
+    // 2. Build Category Lookup Map (ID -> Label)
+    final categoryLookup = <int, String>{
+      for (final c in categoryMap)
+        if (c['IdCategory'] is int)
+          c['IdCategory'] as int: (c['Label'] as String?) ?? '',
+    };
+
+    // 3. Build Level Lookup Map (ID -> Label)
+    final levelLookup = <int, String>{
+      for (final l in levelMaps)
+        if (l['IdLevel'] is int)
+          l['IdLevel'] as int: (l['Label'] as String?) ?? '',
+    };
+
+    // 4. Map Levels by Formation ID: Map<IdFormation, List<Level>>
+    final levelsByFormation = <int, List<Level>>{};
+    for (final d in describeMaps) {
+      final formationId = d['IdFormation'] as int?;
+      final levelId = d['IdLevel'] as int?;
+
+      if (formationId != null && levelId != null) {
+        final levelLabel = levelLookup[levelId] ?? '';
+        levelsByFormation
+            .putIfAbsent(formationId, () => [])
+            .add(Level(id: levelId, label: levelLabel));
+      }
+    }
+
+    // 5. Build Formation Lookup Map (ID -> Formation), reusing levelsByFormation
+    final formationLookup = <int, Formation>{
+      for (final f in formationMap)
+        if (f['IdFormation'] is int)
+          f['IdFormation'] as int: Formation(
+            id: f['IdFormation'] as int,
+            name: (f['Name'] as String?) ?? '',
+            description: (f['Description'] as String?) ?? '',
+            levels: levelsByFormation[f['IdFormation'] as int] ?? [],
+          ),
+    };
+
+    // 6. Map Formations by Result ID: Map<IdResult, Map<Formation, int>>
+    final formationsByResult = <int, Map<Formation, int>>{};
+    for (final fr in formationResultMap) {
+      final resultId = fr['IdResult'] as int?;
+      final formationId = fr['IdFormation'] as int?;
+
+      if (resultId != null && formationId != null) {
+        final weight = (fr['ResultWeight'] as int?) ?? 0;
+        final formation = formationLookup[formationId];
+
+        if (formation != null) {
+          formationsByResult.putIfAbsent(resultId, () => {})[formation] =
+              weight;
         }
-        in resultMap) {
+      }
+    }
+
+    // 7. Build final Result list
+    final List<Result> results = [];
+    for (final row in resultMap) {
+      final idResult = row['IdResult'] as int?;
+      if (idResult == null) continue;
+
+      final date = row['Date'] as String?;
+      final time = row['Time'] as String?;
+
+      DateTime parsedDate;
+      if (date != null && time != null) {
+        parsedDate = DateTime.tryParse('$date $time') ?? DateTime.now();
+      } else if (date != null) {
+        parsedDate = DateTime.tryParse(date) ?? DateTime.now();
+      } else {
+        parsedDate = DateTime.now();
+      }
+
+      Category? category;
+      final idCategory = row['IdCategory'] as int?;
+      if (idCategory != null) {
+        category = Category(
+          id: idCategory,
+          label: categoryLookup[idCategory] ?? '',
+        );
+      }
+
       results.add(
         Result(
           id: idResult,
-          time: DateTime.parse('$date $time'),
-          formations: <Formation, int>{
-            for (final {'IdFormation': idFormation as int}
-                in formationResultMap.where((rf) => rf['IdResult'] == idResult))
-              Formation(
-                id: idFormation,
-                name:
-                    formationResultMap.firstWhere(
-                          (f) => f['IdFormation'] == idFormation,
-                        )['Name']
-                        as String,
-                description:
-                    formationResultMap.firstWhere(
-                          (f) => f['IdFormation'] == idFormation,
-                        )['Description']
-                        as String,
-                levels: [
-                  for (final {'IdLevel': levelId as int} in describeMaps.where(
-                    (d) => d['IdFormation'] == idFormation,
-                  ))
-                    Level(
-                      id: levelId,
-                      label:
-                          levelMaps.firstWhere(
-                                (l) => l['IdLevel'] == levelId,
-                              )['Label']
-                              as String,
-                    ),
-                ],
-              ): formationResultMap.firstWhere(
-                    (rf) =>
-                        rf['IdResult'] == idResult &&
-                        rf['IdFormation'] == idFormation,
-                  )['ResultWeight']
-                  as int,
-          },
-          category: Category(
-            id: idCategory,
-            label:
-                categoryMap.firstWhere(
-                      (c) => c['IdCategory'] == idCategory,
-                    )['Label']
-                    as String,
-          ),
+          time: parsedDate,
+          formations: formationsByResult[idResult] ?? {},
+          category: category,
         ),
       );
     }
-    return [];
+
+    return results;
   }
 
   Future<void> deleteFormation(Formation formation) async {
