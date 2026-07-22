@@ -78,12 +78,20 @@ class _ResultDisplayState extends State<ResultDisplay> {
       }
     }
 
-    double _getMaxY(List<MapEntry<lnk.Formation, int>> entries) {
+    double getMaxY(List<MapEntry<lnk.Formation, int>> entries) {
       if (entries.isEmpty) return 10;
       final maxVal = entries
           .map((e) => e.value)
           .reduce((a, b) => a > b ? a : b);
       return (maxVal * 1.15);
+    }
+
+    double getLeftInterval(List<MapEntry<lnk.Formation, int>> entries) {
+      final maxY = getMaxY(entries);
+      if (maxY <= 5) return 1;
+      if (maxY <= 20) return 2;
+      if (maxY <= 50) return 5;
+      return (maxY / 10).ceilToDouble(); // roughly 10 labels max
     }
 
     Widget? bodyWidget;
@@ -95,174 +103,209 @@ class _ResultDisplayState extends State<ResultDisplay> {
         // 1. SingleChildScrollView prevents layout crashes on small devices
         // if the centered block becomes taller than the screen.
         child: SingleChildScrollView(
-          child: Column(
-            // 2. Force the column to only take up as much space as its children need.
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Center(
-                child: Column(
-                  children: [
-                    Text(
-                      'Vous avez ${selectedFormations.length} matche${selectedFormations.length > 1 ? 's' : ''} !',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.equalizer, color: Colors.green, size: 32),
-                        SizedBox(width: 8),
-                        Text(
-                          'Résultats de la session:',
-                          style: TextStyle(fontSize: 18),
+          child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 50),
+            child: Column(
+              // 2. Force the column to only take up as much space as its children need.
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Center(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Vous avez ${selectedFormations.length} matche${selectedFormations.length > 1 ? 's' : ''} !',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ...selectedFormations.entries.map(
-                      (entry) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Card(
-                          elevation: 15,
-                          shape: const ContinuousRectangleBorder(),
-                          color: Colors.white,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(
-                              entry
-                                  .key
-                                  .name, // Removed redundant string interpolation
-                              style: const TextStyle(
-                                fontSize: 24,
-                                color: Colors.black,
-                                shadows: [
-                                  Shadow(
-                                    offset: Offset(1.0, 1.0),
-                                    blurRadius: 2.0,
-                                    color: Color.fromARGB(255, 255, 255, 255),
-                                  ),
-                                ],
-                              ),
-                            ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.equalizer, color: Colors.green, size: 32),
+                          SizedBox(width: 8),
+                          Text(
+                            'Résultats de la session:',
+                            style: TextStyle(fontSize: 18),
                           ),
-                        ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-
-              // Chart Container
-              SizedBox(
-                height: 300,
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 16, left: 8, top: 16),
-                  child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      maxY: _getMaxY(entries),
-                      barTouchData: BarTouchData(enabled: true),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 60,
-                            getTitlesWidget: (double value, TitleMeta meta) {
-                              final index = value.toInt();
-                              if (index < 0 || index >= entries.length) {
-                                return const SizedBox.shrink();
-                              }
-                              final formation = entries[index].key;
-                              return SideTitleWidget(
-                                meta: meta,
-                                space: 10,
-                                child: Transform.rotate(
-                                  angle: -0.5,
-                                  child: Text(
-                                    formation.name,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
+                      const SizedBox(height: 8),
+                      ...selectedFormations.entries.map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Card(
+                            elevation: 15,
+                            shape: const ContinuousRectangleBorder(),
+                            color: Colors.white,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                '${entry.key.name} (${entry.key.description})', // Removed redundant string interpolation
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  color: Colors.black,
+                                  shadows: [
+                                    Shadow(
+                                      offset: Offset(1.0, 1.0),
+                                      blurRadius: 2.0,
+                                      color: Color.fromARGB(255, 255, 255, 255),
                                     ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                                  ],
                                 ),
-                              );
-                            },
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                      borderData: FlBorderData(show: false),
-                      barGroups: entries.asMap().entries.map((mapEntry) {
-                        final index = mapEntry.key;
-                        final value = mapEntry.value.value;
-
-                        return BarChartGroupData(
-                          x: index,
-                          barRods: [
-                            BarChartRodData(
-                              toY: value.toDouble(),
-                              color: Theme.of(context).colorScheme.primary,
-                              width: 22,
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(4),
-                              ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+            
+                // Chart Container
+                SizedBox(
+                  height: 300,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 16, left: 8, top: 16),
+                    child: BarChart(
+                      BarChartData(
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine:
+                              false, // vertical lines rarely help on a bar chart
+                          horizontalInterval: getLeftInterval(
+                            entries,
+                          ), // match the label spacing
+                          getDrawingHorizontalLine: (value) {
+                            return FlLine(
+                              color: Theme.of(context).colorScheme.outlineVariant,
+                              strokeWidth:
+                                  1, // solid, not dashed — omit dashArray entirely
+                            );
+                          },
+                        ),
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: getMaxY(entries),
+                        barTouchData: BarTouchData(enabled: true),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 32,
+                              interval: getLeftInterval(
+                                entries,
+                              ), // see helper below
+                              getTitlesWidget: (double value, TitleMeta meta) {
+                                // Only show whole numbers, skip anything that rounds oddly
+                                if (value != value.roundToDouble())
+                                  return const SizedBox.shrink();
+                                return Text(
+                                  value.toInt().toString(),
+                                  style: const TextStyle(fontSize: 11),
+                                );
+                              },
                             ),
-                          ],
-                        );
-                      }).toList(),
+                          ),
+            
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 60,
+                              getTitlesWidget: (double value, TitleMeta meta) {
+                                final index = value.toInt();
+                                if (index < 0 || index >= entries.length) {
+                                  return const SizedBox.shrink();
+                                }
+                                final formation = entries[index].key;
+                                return SideTitleWidget(
+                                  meta: meta,
+                                  space: 10,
+                                  child: Transform.rotate(
+                                    angle: -0.5,
+                                    child: Text(
+                                      formation.name,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        barGroups: entries.asMap().entries.map((mapEntry) {
+                          final index = mapEntry.key;
+                          final value = mapEntry.value.value;
+            
+                          return BarChartGroupData(
+                            x: index,
+                            barRods: [
+                              BarChartRodData(
+                                toY: value.toDouble(),
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 22,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(4),
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
                 ),
-              ),
-
-              SizedBox(height: 35),
-
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    showFormations = !showFormations;
-                  });
-                },
-                child: Text('Montrer toute les formations'),
-              ),
-
-              const SizedBox(height: 24), // Add some spacing before the button
-
-              ElevatedButton(
-                onPressed: () {
-                  lnk.DatabaseHelper().insertResult(
-                    lnk.Result(
-                      id: null,
-                      formations: selectedFormations,
-                      time: DateTime.now(),
-                      category: Provider.of<CategoryProvider>(
-                        context,
-                        listen: false,
-                      ).selectedCategory,
-                    ),
-                  );
-                  widget.onSessionEnded();
-                },
-                child: const Text('Recommencer'),
-              ),
-              const SizedBox(
-                height: 32,
-              ), // Add visual padding at the very bottom
-            ],
+            
+                SizedBox(height: 35),
+            
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      showFormations = !showFormations;
+                    });
+                  },
+                  child: Text('Montrer toute les formations'),
+                ),
+            
+                const SizedBox(height: 24), // Add some spacing before the button
+            
+                ElevatedButton(
+                  onPressed: () {
+                    lnk.DatabaseHelper().insertResult(
+                      lnk.Result(
+                        id: null,
+                        formations: selectedFormations,
+                        time: DateTime.now(),
+                        category: Provider.of<CategoryProvider>(
+                          context,
+                          listen: false,
+                        ).selectedCategory,
+                      ),
+                    );
+                    widget.onSessionEnded();
+                  },
+                  child: const Text('Recommencer'),
+                ),
+                const SizedBox(
+                  height: 32,
+                ), // Add visual padding at the very bottom
+              ],
+            ),
           ),
         ),
       );

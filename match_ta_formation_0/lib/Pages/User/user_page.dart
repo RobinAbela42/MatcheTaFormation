@@ -141,96 +141,101 @@ class _UserPageState extends State<UserPage> {
   /// situations tied for the best score, one is chosen at random, so results
   /// vary between calls even for identical input data.
   List<Situation> selectBalancedSituations(
+  List<Situation> situations,
+  Level level, {
+  int count = 10,
+  Random? random,
+}) {
+  final rng = random ?? Random();
 
-    List<Situation> situations,
-    Level level, {
-    int count = 10,
-    Random? random,
-  }) {
-    final rng = random ?? Random();
-
-    // Hard gate: filter to situations where every response with formations
-    // has at least one formation belonging to [level]. Do this before
-    // computing weights so we never process an ineligible situation.
-    final List<Situation> eligible = situations
-        .where((s) => _isEligibleForLevel(s, level))
-        .toList();
-
-    // Precompute formation weights for eligible situations only.
-    // Every weight map here is guaranteed non-empty (eligibility ensures it).
-    final Map<Situation, Map<Formation, int>> situationWeights = {
-      for (final s in eligible) s: _situationFormationWeights(s, level),
-    };
-
-    if (eligible.length <= count) {
-      // Fewer eligible situations than requested — return all of them shuffled.
-      // Callers should handle a shorter-than-expected result gracefully.
-      return eligible..shuffle(rng);
+  // De-duplicate by id first. Two different Situation instances with the
+  // same id represent the same underlying row and must not both be
+  // eligible for selection. Situations with a null id can't be tracked
+  // back to a row, so we keep at most the first occurrence we see but
+  // can't guarantee uniqueness for them beyond object identity.
+  final List<Situation> deduped = [];
+  final Set<int> seenIds = {};
+  for (final s in situations) {
+    if (s.id == null) {
+      deduped.add(s);
+      continue;
     }
-
-    final List<Situation> remaining = List<Situation>.from(eligible);
-    final List<Situation> selected = [];
-    // Running totals: Formation → cumulative weight contributed by selected
-    // situations so far. Only formations matching [level] appear here.
-    final Map<Formation, int> totals = {};
-
-    for (var slot = 0; slot < count; slot++) {
-      if (remaining.isEmpty) break;
-
-      // Average weight across all formations seen so far.
-      // Starts at 0.0 when nothing has been selected yet.
-      final avg = totals.isEmpty
-          ? 0.0
-          : totals.values.reduce((a, b) => a + b) / totals.length;
-
-      double bestScore = double.negativeInfinity;
-      final List<Situation> bestCandidates = [];
-
-      for (final candidate in remaining) {
-        // weights is guaranteed non-empty: eligibility ensures every
-        // candidate has at least one level-matching formation.
-        final weights = situationWeights[candidate]!;
-
-        // Score this candidate:
-        //  - Formations currently below the average contribute positively
-        //    (deficit > 0 → picking this helps balance).
-        //  - Formations already above the average contribute negatively
-        //    (deficit < 0 → picking this worsens balance).
-        // The weight multiplier means formations touched by many responses
-        // have proportionally more influence on the score.
-        double score = 0;
-        weights.forEach((formation, weight) {
-          final current = totals[formation] ?? 0;
-          score += (avg - current) * weight; // deficit × weight
-        });
-
-        if (score > bestScore) {
-          bestScore = score;
-          bestCandidates
-            ..clear()
-            ..add(candidate);
-        } else if (score == bestScore) {
-          bestCandidates.add(candidate);
-        }
-      }
-
-      // Pick randomly among equally-scored candidates for run-to-run variety.
-      final chosen = bestCandidates[rng.nextInt(bestCandidates.length)];
-      selected.add(chosen);
-      remaining.remove(chosen);
-
-      // Commit the chosen situation's weights to the running totals.
-      situationWeights[chosen]!.forEach((formation, weight) {
-        totals.update(
-          formation,
-          (existing) => existing + weight,
-          ifAbsent: () => weight,
-        );
-      });
+    if (seenIds.add(s.id!)) {
+      deduped.add(s);
     }
-
-    return selected;
   }
+
+  // Hard gate: filter to situations where every response with formations
+  // has at least one formation belonging to [level]. Do this before
+  // computing weights so we never process an ineligible situation.
+  final List<Situation> eligible = deduped
+      .where((s) => _isEligibleForLevel(s, level))
+      .toList();
+
+  if (eligible.isEmpty) return [];
+
+  // Precompute formation weights for eligible situations only, keyed by
+  // situation id (falling back to object identity for null-id situations)
+  // rather than the Situation object itself, so we don't depend on
+  // Situation having value equality.
+  final Map<Object, Map<Formation, int>> situationWeights = {
+    for (final s in eligible) (s.id ?? s): _situationFormationWeights(s, level),
+  };
+
+  if (eligible.length <= count) {
+    // Fewer eligible situations than requested — return all of them shuffled.
+    // Callers should handle a shorter-than-expected result gracefully.
+    return eligible..shuffle(rng);
+  }
+
+  final List<Situation> remaining = List<Situation>.from(eligible);
+  final List<Situation> selected = [];
+  final Map<Formation, int> totals = {};
+
+  for (var slot = 0; slot < count; slot++) {
+    if (remaining.isEmpty) break; // no more situations → stop, don't pad
+
+    final avg = totals.isEmpty
+        ? 0.0
+        : totals.values.reduce((a, b) => a + b) / totals.length;
+
+    double bestScore = double.negativeInfinity;
+    final List<Situation> bestCandidates = [];
+
+    for (final candidate in remaining) {
+      final weights = situationWeights[candidate.id ?? candidate]!;
+
+      double score = 0;
+      weights.forEach((formation, weight) {
+        final current = totals[formation] ?? 0;
+        score += (avg - current) * weight;
+      });
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestCandidates
+          ..clear()
+          ..add(candidate);
+      } else if (score == bestScore) {
+        bestCandidates.add(candidate);
+      }
+    }
+
+    final chosen = bestCandidates[rng.nextInt(bestCandidates.length)];
+    selected.add(chosen);
+    remaining.remove(chosen); // removes this exact instance from remaining
+
+    situationWeights[chosen.id ?? chosen]!.forEach((formation, weight) {
+      totals.update(
+        formation,
+        (existing) => existing + weight,
+        ifAbsent: () => weight,
+      );
+    });
+  }
+
+  return selected;
+}
  
   // Fin Claude
 
