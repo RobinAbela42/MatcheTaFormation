@@ -7,6 +7,25 @@ import 'package:match_ta_formation_0/Pages/Admin/category_picker_admin.dart';
 import 'package:match_ta_formation_0/DataBase/link.dart' as lnk;
 import 'package:match_ta_formation_0/Pages/Admin/situation_admin_page.dart';
 
+
+/// Page d'accueil de l'espace administrateur, accessible après
+/// authentification réussie depuis [AdminLogin].
+///
+/// Organise l'administration de l'application en 4 onglets via un
+/// [DefaultTabController] :
+/// - **Situations** : [SituationAdminPage], gestion des situations
+///   présentées à l'utilisateur dans le parcours de swipe.
+/// - **Formations** : [FormationAdminPage], gestion des formations
+///   proposées en résultat du matching.
+/// - **Resultats** : [ResultAdminPage], consultation des résultats de
+///   session enregistrés (voir `insertResult` dans [ResultDisplay]).
+/// - **Categories** : [CategoryPickerAdmin], gestion des catégories
+///   (voir [CategoryProvider]).
+///
+/// Chaque onglet est un widget autonome et indépendant : cette page ne
+/// fait qu'assembler la structure de navigation (barre d'onglets +
+/// contenu correspondant), sans logique métier propre.
+
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
 
@@ -50,7 +69,26 @@ class _AdminPageState extends State<AdminPage> {
   }
 }
 
-//Situation
+/// Onglet d'administration permettant de lister, créer, modifier et
+/// supprimer les [lnk.Situation] présentées aux utilisateurs dans le
+/// parcours de swipe (voir [UserPage] / [SwipeCard]).
+///
+/// Trois modes d'affichage s'excluent mutuellement, pilotés par l'état
+/// local (`_isAddingSituation`, `_selectedSituation`) :
+/// - **Liste** (mode par défaut) : charge l'ensemble des situations via
+///   `databaseHelper.getSituations()` et les affiche sous forme de
+///   [SituationCard], chacune résumant la description de la situation et
+///   ses deux premières réponses. Un tap sur une carte bascule en mode
+///   édition ; l'icône de suppression appelle
+///   `DatabaseHelper().deleteSituation(s)` puis force un rafraîchissement
+///   de la liste.
+/// - **Ajout** (`_isAddingSituation == true`) : affiche [SituationAdd],
+///   un formulaire de création dédié. La fermeture du formulaire
+///   (`onClose`) repasse en mode liste.
+/// - **Édition** (`_selectedSituation != null`) : affiche [SituationEdit]
+///   pour la situation sélectionnée. La fermeture (`onClose`) repasse en
+///   mode liste.
+
 class SituationAdminPage extends StatefulWidget {
   const SituationAdminPage({super.key});
 
@@ -201,7 +239,37 @@ class SituationCard extends StatelessWidget {
   }
 }
 
-//Formations
+
+/// Carte réutilisable et sans état affichant le résumé d'une
+/// [lnk.Situation] dans les écrans d'administration (voir
+/// [SituationAdminPage]).
+///
+/// Affiche le [title] (description de la situation) ainsi que ses deux
+/// premières réponses possibles ([response1] et [response2]), avec un
+/// bouton de suppression (icône poubelle) en fin de ligne.
+///
+/// Deux interactions sont exposées, toutes deux optionnelles :
+/// - [onTap] : déclenché au tap sur l'ensemble de la carte (via
+///   [InkWell]), typiquement utilisé pour ouvrir l'édition de la
+///   situation correspondante.
+/// - [onDelete] : déclenché uniquement par le bouton dédié, typiquement
+///   utilisé pour supprimer la situation en base de données. Typé
+///   [AsyncCallback] afin de permettre un traitement asynchrone (ex.
+///   attendre la fin de la suppression avant de rafraîchir la liste
+///   parente).
+///
+/// Ce widget est purement présentationnel ([StatelessWidget]) : il ne
+/// contient aucune logique métier ni appel direct à la base de données,
+/// toute la logique étant déléguée au widget parent via les callbacks.
+/// /// Points d'attention pour les développeurs :
+/// - Le bouton de suppression est un simple [ElevatedButton] contenant
+///   une icône, sans confirmation ni retour visuel de chargement pendant
+///   l'exécution de [onDelete] : si la suppression prend du temps
+///   (latence réseau/DB), l'utilisateur ne reçoit aucun indice qu'une
+///   action est en cours et pourrait cliquer plusieurs fois. À envisager
+///   un état de chargement local ou une désactivation temporaire du
+///   bouton.
+
 class FormationAdminPage extends StatefulWidget {
   const FormationAdminPage({super.key});
 
@@ -299,6 +367,32 @@ class _FormationAdminPageState extends State<FormationAdminPage> {
     );
   }
 }
+
+/// Carte réutilisable et sans état affichant le résumé d'une formation.
+///
+/// Affiche le [title] et le [subtitle] de la formation, accompagnés d'un 
+/// [CircleAvatar] généré à partir de la première lettre du titre, ainsi
+/// qu'un bouton de suppression (icône poubelle rouge) en fin de ligne.
+///
+/// Deux interactions sont exposées, toutes deux optionnelles :
+/// - [onTap] : déclenché au tap sur l'ensemble de la carte (via
+///   [InkWell]), typiquement utilisé pour naviguer vers l'écran de détail
+///   ou d'édition de la formation correspondante.
+/// - [onDelete] : déclenché uniquement par le bouton dédié, typiquement
+///   utilisé pour supprimer la formation. Typé [AsyncCallback] afin de 
+///   permettre un traitement asynchrone (ex. attendre la fin de la requête
+///   réseau avant de mettre à jour l'interface).
+///
+/// Ce widget est purement présentationnel ([StatelessWidget]) : il ne
+/// contient aucune logique métier ni appel direct à la base de données,
+/// toute la logique étant déléguée au widget parent via les callbacks.
+///
+/// Points d'attention pour les développeurs :
+/// - Le bouton de suppression est un simple [ElevatedButton] sans étape de
+///   confirmation préalable ni retour visuel de chargement pendant
+///   l'exécution de [onDelete]. Si la suppression prend du temps,
+///   l'utilisateur ne reçoit aucun indice visuel et pourrait cliquer 
+///   plusieurs fois.
 
 class FormationCard extends StatelessWidget {
   final String title;

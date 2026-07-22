@@ -261,6 +261,28 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
+
+/// Widget qui affiche son [child] avec un effet de zoom d'entrée (scale-in)
+/// lors de son premier affichage à l'écran.
+///
+/// L'animation part d'une échelle de 0 (invisible/réduit) jusqu'à 1
+/// (taille normale), en utilisant une [CurvedAnimation] pilotée par un
+/// [AnimationController].
+///
+/// Exemple d'utilisation :
+/// ```dart
+/// ZoomedInWidget(
+///   duration: const Duration(milliseconds: 600),
+///   curve: Curves.elasticOut,
+///   child: Text('Bonjour !'),
+/// )
+/// ```
+///
+/// ⚠️ Remarque : l'animation démarre automatiquement dans [initState] et
+/// ne se relance pas si les propriétés du widget changent (par exemple
+/// si [child] est remplacé). Si un redémarrage de l'animation est
+/// nécessaire à chaque changement, il faudra surcharger [didUpdateWidget].
+/// 
 class ZoomedInWidget extends StatefulWidget {
   final Widget child;
   final Duration duration;

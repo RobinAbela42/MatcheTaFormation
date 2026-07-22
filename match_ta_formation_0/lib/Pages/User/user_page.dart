@@ -14,6 +14,42 @@ import 'result_page.dart';
 import 'package:match_ta_formation_0/Pages/Admin/admin_page.dart';
 // import 'package:path/path.dart';
 
+
+/// Écran principal du parcours utilisateur : sélection du niveau
+/// (secondaire/tertiaire), enchaînement des situations sous forme de
+/// cartes swipables ([SwipeCard]), puis affichage du résultat final
+/// (formations recommandées) via [ResultDisplay].
+///
+/// Le flux se déroule en 3 phases, pilotées par l'état local :
+/// 1. **Sélection du niveau** (`selectedLevel == null`) : affiche la
+///    liste des [Level] disponibles (chargés via
+///    `DatabaseHelper().getLevels()`) sous forme de boutons.
+/// 2. **Session de situations** (`selectedLevel != null`,
+///    `endOfSession == false`) : charge l'ensemble des [Situation] via
+///    `DatabaseHelper().getSituations()`, en sélectionne un sous-ensemble
+///    équilibré par formation grâce à [selectBalancedSituations], puis les
+///    présente une à une dans un [ZoomedInWidget] > [SwipeCard]. Chaque
+///    réponse de l'utilisateur (swipe gauche/droite) incrémente les poids
+///    de formations correspondants dans [currentSessionFormations].
+/// 3. **Fin de session / résultats** (`endOfSession == true`) : affiche
+///    un court écran de chargement (2 secondes, via `Future.delayed`)
+///    puis les résultats agrégés via [ResultDisplay]. Un bouton flottant
+///    "Réinitialiser" (visible dès qu'une situation est en cours) permet
+///    d'abandonner la session à tout moment et de revenir à l'accueil.
+///
+/// Un [FloatingActionButton] en haut à droite donne accès à la page
+/// d'administration ([AdminLogin]), indépendamment de l'état du parcours.
+///
+/// Sélection équilibrée des situations ([selectBalancedSituations]) :
+/// l'algorithme filtre d'abord les situations "éligibles" pour le
+/// [Level] choisi (chaque réponse portant des formations doit en avoir
+/// au moins une compatible avec le niveau — voir [_isEligibleForLevel]),
+/// puis choisit glouton-aléatoirement les situations qui équilibrent le
+/// mieux le poids cumulé de chaque formation (voir
+/// [_situationFormationWeights]), afin d'éviter qu'une formation ne soit
+/// sur-représentée dans les résultats finaux.
+
+
 class UserPage extends StatefulWidget {
   const UserPage({super.key});
 
@@ -450,6 +486,33 @@ bool _isLoadingResults = false;
   }
 }
 
+/// Carte swipable (façon "Tinder") représentant une [situation] à laquelle
+/// l'utilisateur répond en glissant la carte vers la gauche ou la droite.
+///
+/// La [situation] doit exposer une propriété `description` (texte affiché
+/// au centre de la carte) ainsi qu'une liste `responses` d'au moins deux
+/// éléments, chacun avec une propriété `description` : `responses[0]`
+/// correspond au choix "gauche" (swipe gauche / bouton flèche gauche) et
+/// `responses[1]` au choix "droite" (swipe droite / bouton flèche droite).
+///
+/// Le geste de glissement est géré manuellement via [GestureDetector]
+/// (`onPanUpdate` / `onPanEnd`) et déplace la carte en suivant le doigt.
+/// Si le déplacement horizontal dépasse un seuil de 150px au relâchement,
+/// la carte est automatiquement éjectée hors de l'écran (swipe complet) ;
+/// sinon, elle revient à sa position initiale ([_runResetAnimation]).
+/// Les deux boutons fléchés en bas de carte déclenchent le même
+/// comportement que le swipe correspondant ([swipeLeft] / [swipeRight]),
+/// sans nécessiter de geste.
+///
+/// Une fois le swipe (ou le clic sur bouton) validé, [onSwiped] est appelé
+/// avec la réponse choisie (`responses[0]` ou `responses[1]`), puis la
+/// position de la carte est réinitialisée pour la prochaine carte de la
+/// pile.
+///
+/// L'animation de déplacement (glissement, éjection, retour au centre)
+/// est pilotée par un unique [AnimationController] combiné à des
+/// [Tween<Offset>] recréés à la volée selon l'action en cours.
+/// 
 class SwipeCard extends StatefulWidget {
   // Passing the situation structure directly to read its text content
   final dynamic situation;
@@ -723,6 +786,21 @@ class _SwipeCardState extends State<SwipeCard>
     );
   }
 }
+
+/// Écran d'onboarding (tutoriel de bienvenue) affiché au premier lancement
+/// de l'application "Matche Ta Formation".
+///
+/// Présente une série d'étapes définies dans [_tutorialSteps], chacune
+/// rendue via un [TutorialStepWidget], au sein d'un [PageView] swipable
+/// contrôlé par [_pageController]. Une barre de navigation en bas de
+/// l'écran affiche des indicateurs de progression (points) ainsi que des
+/// boutons "Précédent" / "Suivant" (le dernier devenant "Commencer" sur
+/// la dernière étape). Une image décorative est superposée en haut à
+/// gauche de l'écran via un [Stack].
+///
+/// Une fois la dernière étape validée, [_completeOnboarding] redirige
+/// l'utilisateur vers [UserPage] en remplaçant la pile de navigation
+/// (retour arrière impossible vers l'onboarding).
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});

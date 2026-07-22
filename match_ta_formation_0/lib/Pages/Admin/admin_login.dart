@@ -3,6 +3,17 @@ import 'admin_page.dart';
 // import 'package:flutter/widgets.dart';
 import 'package:match_ta_formation_0/DataBase/link.dart';
 
+
+/// Écran de connexion pour l'accès à l'espace administrateur
+/// ([AdminPage]).
+///
+/// Affiche un formulaire simple (nom d'utilisateur + mot de passe, avec
+/// bouton d'affichage/masquage du mot de passe) et vérifie les
+/// identifiants saisis contre la liste des [Admin] renvoyée par
+/// `DatabaseHelper().getAdmins()`. En cas de correspondance, navigue vers
+/// [AdminPage] ; sinon, affiche un message d'erreur via un
+/// [SnackBar].
+
 class AdminLogin extends StatefulWidget {
   const AdminLogin({super.key});
 
