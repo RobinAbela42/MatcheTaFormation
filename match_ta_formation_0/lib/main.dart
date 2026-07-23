@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:match_ta_formation_0/Pages/Admin/display_admin_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'Pages/Admin/admin_login.dart';
 import 'Pages/User/user_page.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +16,7 @@ import 'Pages/provider.dart';
 
 // Make sure you have your imports for sqflite, provider, dart:io, etc.
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize sqflite for Desktop platforms
@@ -32,12 +36,20 @@ void main() async {
   // 2. Await the database initialization here
   final Database db = await DatabaseHelper.initDb();
 
+  WidgetsFlutterBinding.ensureInitialized();
+  final store = TextStore(TextRepository());
+  await store.init();
+
   // 3. Use MultiProvider to inject both your existing provider and the new database
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => CategoryProvider()),
         Provider<Database>.value(value: db),
+        ChangeNotifierProvider.value(
+          value: store,
+          child: const MyApp(), // MyApp contains the MaterialApp
+        ),
       ],
       child: const MyApp(),
     ),
@@ -58,7 +70,7 @@ class MyApp extends StatelessWidget {
 
       theme: ThemeData(
         fontFamily: 'Gotham',
-        scaffoldBackgroundColor: Color.fromARGB(255, 28, 42, 175),
+        scaffoldBackgroundColor: Colors.white,
         appBarTheme: AppBarTheme(
           backgroundColor: Color(0xFFFF2B83),
           foregroundColor: Color.fromARGB(255, 255, 255, 255),
@@ -111,8 +123,12 @@ class MyApp extends StatelessWidget {
               ),
             ],
           ),
-          titleSmall: TextStyle(
-            color: Color.fromARGB(255, 255, 255, 255),
+          displayLarge: TextStyle(color: Color(0xFF1C2AAF)),
+          displayMedium: TextStyle(color: Color(0xFF1C2AAF)),
+          displaySmall: TextStyle(color: Color(0xFF1C2AAF), fontSize: 15),
+          titleSmall: TextStyle(color: Colors.black),
+          titleMedium: TextStyle(
+            color: Colors.white,
             shadows: [
               Shadow(
                 offset: Offset(1.0, 1.0),
@@ -121,16 +137,7 @@ class MyApp extends StatelessWidget {
               ),
             ],
           ),
-          titleLarge: TextStyle(
-            color: Color.fromARGB(255, 255, 255, 255),
-            shadows: [
-              Shadow(
-                offset: Offset(1.0, 1.0),
-                blurRadius: 2.0,
-                color: Color.fromARGB(255, 0, 0, 0),
-              ),
-            ],
-          ),
+          titleLarge: TextStyle(color: Colors.black),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
@@ -168,7 +175,6 @@ class MyApp extends StatelessWidget {
           labelStyle: TextStyle(color: Colors.white),
         ),
 
-        
         // This is the theme of your application.
         //
         // TRY THIS: Try running your application with "flutter run". You'll see
@@ -261,7 +267,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-
 /// Widget qui affiche son [child] avec un effet de zoom d'entrée (scale-in)
 /// lors de son premier affichage à l'écran.
 ///
@@ -282,7 +287,7 @@ class _MyHomePageState extends State<MyHomePage> {
 /// ne se relance pas si les propriétés du widget changent (par exemple
 /// si [child] est remplacé). Si un redémarrage de l'animation est
 /// nécessaire à chaque changement, il faudra surcharger [didUpdateWidget].
-/// 
+///
 class ZoomedInWidget extends StatefulWidget {
   final Widget child;
   final Duration duration;
@@ -294,7 +299,7 @@ class ZoomedInWidget extends StatefulWidget {
     required this.child,
     this.duration = const Duration(milliseconds: 400),
     this.alignment = Alignment.center,
-    this.curve = Curves.easeIn
+    this.curve = Curves.easeIn,
   });
 
   @override
@@ -314,10 +319,7 @@ class _ZoomedInWidgetState extends State<ZoomedInWidget>
     _controller = AnimationController(vsync: this, duration: widget.duration);
 
     // Apply the ease-in-out curve to a 0 to 1 scale range
-    _scaleAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: widget.curve,
-    );
+    _scaleAnimation = CurvedAnimation(parent: _controller, curve: widget.curve);
 
     // Trigger the animation forward immediately on display
     _controller.forward();

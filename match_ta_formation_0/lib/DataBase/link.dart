@@ -2,6 +2,7 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 
 // import 'package:flutter/foundation.dart';
 // import 'package:flutter/semantics.dart';
@@ -9,6 +10,10 @@ import 'package:flutter/material.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:image_picker/image_picker.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 class Situation {
   final int? id;
@@ -79,16 +84,33 @@ class Formation {
   final String name;
   final String description;
   final List<Level> levels;
+  final String? imagePath;
 
   const Formation({
     this.id,
     required this.name,
     required this.description,
     required this.levels,
+    this.imagePath,
   });
 
+  File? get image => imagePath != null ? File(imagePath!) : null;
+
+  Formation copyWith({String? imagePath}) => Formation(
+    id: id,
+    name: name,
+    description: description,
+    levels: levels,
+    imagePath: imagePath ?? this.imagePath,
+  );
+
   Map<String, Object?> toMap() {
-    return {'IdFormation': id, 'Name': name, 'Description': description};
+    return {
+      'IdFormation': id,
+      'Name': name,
+      'Description': description,
+      'ImagePath': imagePath,
+    };
   }
 
   @override
@@ -224,7 +246,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (Database db, int version) async {
         String creationScript = '''
 DROP TABLE IF EXISTS Describe;
@@ -269,7 +291,8 @@ CREATE TABLE Level (
 CREATE TABLE Formation (
     IdFormation INTEGER PRIMARY KEY AUTOINCREMENT,
     Name VARCHAR(255) NOT NULL,
-    Description TEXT
+    Description TEXT,
+    ImagePath TEXT
 );
 
 CREATE TABLE Response (
@@ -675,21 +698,59 @@ INSERT INTO Describe (IdFormation, IdLevel) VALUES
     }
   }
 
-  Future<void> insertFormation(Formation formation) async {
+  Future<String> _persistFormationImage(int formationId, XFile picked) async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    final dirPath = docsDir.path;
+
+    final dir = Directory(dirPath);
+    final existing = dir.listSync().whereType<File>().where(
+      (f) => p.basenameWithoutExtension(f.path) == 'formation_$formationId',
+    );
+
+    for (final f in existing) {
+      // 👇 evict from Flutter's image cache BEFORE deleting the file
+      await FileImage(f).evict();
+      await f.delete();
+    }
+
+    final ext = p.extension(picked.path);
+    final destPath = '$dirPath/formation_$formationId$ext';
+    final destFile = await File(picked.path).copy(destPath);
+
+    // 👇 also evict the destination path in case it was already cached
+    // (e.g. same extension as before, so destPath == old deleted path)
+    await FileImage(destFile).evict();
+
+    return destFile.path;
+  }
+
+  Future<void> insertFormation(
+    Formation formation, {
+    XFile? pickedImage,
+  }) async {
     final db = await database;
+
+    var toSave = formation;
+    if (pickedImage != null) {
+      final imagePath = await _persistFormationImage(
+        formation.id!,
+        pickedImage,
+      );
+      toSave = formation.copyWith(imagePath: imagePath);
+    }
 
     await db.transaction((txn) async {
       // 1. Insert core Formation row
       await txn.insert(
         'Formation',
-        formation.toMap(),
+        toSave.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
       // 2. Loop and link inside the "Describe" junction table
-      for (var level in formation.levels) {
+      for (var level in toSave.levels) {
         await txn.insert('Describe', {
-          'IdFormation': formation.id,
+          'IdFormation': toSave.id,
           'IdLevel': level.id,
         }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
@@ -760,29 +821,41 @@ INSERT INTO Describe (IdFormation, IdLevel) VALUES
     });
   }
 
-  Future<void> updateFormation(Formation formation) async {
+  Future<void> updateFormation(
+    Formation formation, {
+    XFile? pickedImage,
+  }) async {
     final db = await database;
+
+    var toSave = formation;
+    if (pickedImage != null) {
+      final imagePath = await _persistFormationImage(
+        formation.id!,
+        pickedImage,
+      );
+      toSave = formation.copyWith(imagePath: imagePath);
+    }
 
     await db.transaction((txn) async {
       // 1. Update the core Formation details
       await txn.update(
         'Formation',
-        formation.toMap(),
+        toSave.toMap(),
         where: 'IdFormation = ?',
-        whereArgs: [formation.id],
+        whereArgs: [toSave.id],
       );
 
       // 2. Clear existing level links in the "Describe" junction table
       await txn.delete(
         'Describe',
         where: 'IdFormation = ?',
-        whereArgs: [formation.id],
+        whereArgs: [toSave.id],
       );
 
       // 3. Re-insert updated level links
-      for (var level in formation.levels) {
+      for (var level in toSave.levels) {
         await txn.insert('Describe', {
-          'IdFormation': formation.id,
+          'IdFormation': toSave.id,
           'IdLevel': level.id,
         }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
@@ -858,17 +931,23 @@ INSERT INTO Describe (IdFormation, IdLevel) VALUES
     final List<Map<String, Object?>> formationMaps = await db.query(
       'Formation',
     );
+    debugPrint('--- Raw formation rows ---');
+    for (final m in formationMaps) {
+      debugPrint(m.toString());
+    }
     return [
       for (final {
             'IdFormation': id as int,
             'Name': name as String,
             'Description': description as String,
+            'ImagePath': imagePath as String?,
           }
           in formationMaps)
         Formation(
           id: id,
           name: name,
           description: description,
+          imagePath: imagePath,
           levels: [
             for (final {
                   'IdLevel': levelId as int,
@@ -961,6 +1040,11 @@ INSERT INTO Describe (IdFormation, IdLevel) VALUES
                                 (f) => f['IdFormation'] == formationId,
                               )['Description']
                               as String,
+                      imagePath:
+                          formationMaps.firstWhere(
+                                (f) => f['IdFormation'] == formationId,
+                              )['ImagePath']
+                              as String?,
                       levels: [
                         for (final {'IdLevel': levelId as int}
                             in describeMaps.where(
@@ -1112,6 +1196,13 @@ INSERT INTO Describe (IdFormation, IdLevel) VALUES
 
   Future<void> deleteFormation(Formation formation) async {
     final db = await database;
+    final docsDir = await getApplicationDocumentsDirectory();
+    final stray = Directory(docsDir.path).listSync().whereType<File>().where(
+      (f) => p.basenameWithoutExtension(f.path) == 'formation_${formation.id}',
+    );
+    for (final f in stray) {
+      await f.delete();
+    }
 
     await db.transaction((txn) async {
       await txn.delete(

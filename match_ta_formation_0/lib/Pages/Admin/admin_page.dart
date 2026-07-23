@@ -6,6 +6,7 @@ import 'package:match_ta_formation_0/Pages/Admin/formation_admin_page.dart';
 import 'package:match_ta_formation_0/Pages/Admin/category_picker_admin.dart';
 import 'package:match_ta_formation_0/DataBase/link.dart' as lnk;
 import 'package:match_ta_formation_0/Pages/Admin/situation_admin_page.dart';
+import 'package:match_ta_formation_0/Pages/Admin/display_admin_page.dart';
 
 /// Page d'accueil de l'espace administrateur, accessible après
 /// authentification réussie depuis [AdminLogin].
@@ -40,15 +41,17 @@ class _AdminPageState extends State<AdminPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Admin Page')),
       body: DefaultTabController(
-        length: 4,
+        length: 5,
         child: Column(
           children: [
             const TabBar(
+              unselectedLabelColor: Color(0xFF1C2AAF),
               tabs: [
                 Tab(text: 'Situations'),
                 Tab(text: 'Formations'),
                 Tab(text: 'Resultats'),
                 Tab(text: 'Categories'),
+                Tab(text: 'Display'),
               ],
             ),
             Expanded(
@@ -58,6 +61,8 @@ class _AdminPageState extends State<AdminPage> {
                   FormationAdminPage(),
                   ResultAdminPage(),
                   CategoryPickerAdmin(),
+                  DisplayAdminPage(),
+
                 ],
               ),
             ),
@@ -214,7 +219,7 @@ class SituationCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.titleLarge),
+                    Text(title, style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
                     Text(
                       'Response 1: $response1',
@@ -424,17 +429,17 @@ class FormationCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              CircleAvatar(child: Text(title.substring(0, 1))),
+              CircleAvatar(child: Text(title.substring(0, 1), style: Theme.of(context).textTheme.titleLarge,)),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.titleLarge),
+                    Text(title, style: TextStyle(fontSize: 24)),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: Theme.of(context).textTheme.titleSmall,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ],
                 ),

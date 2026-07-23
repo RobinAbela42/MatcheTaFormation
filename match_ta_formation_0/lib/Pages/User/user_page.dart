@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 import 'dart:math'; 
 import 'package:match_ta_formation_0/DataBase/link.dart';
 import 'package:match_ta_formation_0/Pages/Admin/admin_login.dart';
+import 'package:match_ta_formation_0/Pages/Admin/display_admin_page.dart';
 import 'package:match_ta_formation_0/main.dart';
+import 'package:provider/provider.dart';
 
 import 'result_page.dart';
 import 'package:match_ta_formation_0/Pages/Admin/admin_page.dart';
@@ -260,13 +262,13 @@ bool _isLoadingResults = false;
     if (endOfSession && currentSessionFormations.isNotEmpty) {
       if (!_isLoadingResults) {
     // 1. Instantly show the loader
-    bodyContent = const Center(
+    bodyContent = Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Calcul de la meilleur formation ...'),
-          SizedBox(height: 24,),
-          CircularProgressIndicator()
+          Text('Calcul de la meilleur formation ...', style: Theme.of(context).textTheme.displaySmall ,),
+          const SizedBox(height: 24,),
+          const CircularProgressIndicator()
 
       ],),
     );
@@ -381,13 +383,9 @@ bool _isLoadingResults = false;
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Add a clean header title for better UX
-                    const Text(
+                    Text(
                       'Choisissez votre niveau',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
+                      style: Theme.of(context).textTheme.displayMedium 
                     ),
                     const SizedBox(height: 32),
 
@@ -480,8 +478,8 @@ bool _isLoadingResults = false;
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Theme.of(context).colorScheme.secondary,
                   ),
-                  icon: const Icon(Icons.reset_tv),
-                  label: const Text('Réinitialiser'),
+                  icon: const Icon(Icons.reset_tv, color: Colors.white,),
+                  label: Text('Réinitialiser', style: Theme.of(context).textTheme.bodyMedium,),
                 ),
               ),
             ),
@@ -822,22 +820,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<Widget> _tutorialSteps = [
     const TutorialStepWidget(
       title: 'Bienvenue sur Matche Ta Formation !',
-      description: 'Découvre ta formation idéale grâce à des questions personnalisées ... Clique sur  \'Suivant\' !',
+      description: AdminEditableText.tutoTitle1,
       icon: Icons.waving_hand,
     ),
     const TutorialStepWidget(
       title: 'Comment ça marche ?',
-      description: 'Tu sera invité à swiper les situations qui te feront face à gauche ou à droite, en fonction de la réponse qui te conviendra le mieux ...',
+      description: AdminEditableText.tutoTitle2,
       icon: Icons.explore,
     ),
     const TutorialStepWidget(
       title: 'Secondaire ? Tertiaire ?',
-      description: 'JE NE SAIS PAS',
+      description: AdminEditableText.tutoTitle3,
       icon: Icons.question_mark_rounded,
     ),
     const TutorialStepWidget(
       title: 'C\'est parti !',
-      description: 'Clique sur \'Commencer\' !',
+      description: AdminEditableText.tutoTitle4,
       icon: Icons.rocket_launch,
     ),
   ];
@@ -997,7 +995,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 // Dummy widget representing individual tutorial steps
 class TutorialStepWidget extends StatelessWidget {
   final String title;
-  final String description;
+  final AdminEditableText description;
   final IconData icon;
 
   const TutorialStepWidget({
@@ -1022,11 +1020,12 @@ class TutorialStepWidget extends StatelessWidget {
               color: Theme.of(context).colorScheme.primary,
               fontFamily: 'Gotham',
               fontSize: 32,
+              shadows: []
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            description,
+            context.watch<TextStore>().textFor(description),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge,
           ),

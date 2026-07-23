@@ -45,7 +45,7 @@ class _AdminLoginState extends State<AdminLogin> {
           mainAxisAlignment: MainAxisAlignment.center,
           
           children: [
-            Text('Se connecter en tant qu\'Administrateur', style: TextStyle(fontSize: 25,),textAlign: TextAlign.center,),
+            Text('Se connecter en tant qu\'Administrateur', style: Theme.of(context).textTheme.displayMedium,textAlign: TextAlign.center,),
             SizedBox(height: 16,),
             TextField(
               controller: _usernameController,

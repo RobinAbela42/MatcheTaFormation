@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:match_ta_formation_0/Pages/provider.dart';
 import 'package:provider/provider.dart';
@@ -98,13 +100,25 @@ class _ResultDisplayState extends State<ResultDisplay> {
 
     final entries = widget.currentSessionFormations.entries.toList();
 
+    lnk.DatabaseHelper().insertResult(
+      lnk.Result(
+        id: null,
+        formations: selectedFormations,
+        time: DateTime.now(),
+        category: Provider.of<CategoryProvider>(
+          context,
+          listen: false,
+        ).selectedCategory,
+      ),
+    );
+
     if (!showFormations) {
       bodyWidget = Center(
         // 1. SingleChildScrollView prevents layout crashes on small devices
         // if the centered block becomes taller than the screen.
         child: SingleChildScrollView(
           child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 50),
+            padding: const EdgeInsets.symmetric(horizontal: 50),
             child: Column(
               // 2. Force the column to only take up as much space as its children need.
               mainAxisSize: MainAxisSize.min,
@@ -115,21 +129,21 @@ class _ResultDisplayState extends State<ResultDisplay> {
                     children: [
                       Text(
                         'Vous avez ${selectedFormations.length} matche${selectedFormations.length > 1 ? 's' : ''} !',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                        style: Theme.of(context).textTheme.displayLarge,
                       ),
                       const SizedBox(height: 16),
-                      const Row(
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.equalizer, color: Colors.green, size: 32),
+                          Icon(
+                            Icons.equalizer,
+                            color: Theme.of(context).primaryColor,
+                            size: 64,
+                          ),
                           SizedBox(width: 8),
                           Text(
                             'Résultats de la session:',
-                            style: TextStyle(fontSize: 18),
+                            style: Theme.of(context).textTheme.displayMedium,
                           ),
                         ],
                       ),
@@ -147,7 +161,7 @@ class _ResultDisplayState extends State<ResultDisplay> {
                                 '${entry.key.name} (${entry.key.description})', // Removed redundant string interpolation
                                 style: const TextStyle(
                                   fontSize: 24,
-                                  color: Colors.black,
+                                  color: Color(0xFF1C2AAF),
                                   shadows: [
                                     Shadow(
                                       offset: Offset(1.0, 1.0),
@@ -165,7 +179,7 @@ class _ResultDisplayState extends State<ResultDisplay> {
                     ],
                   ),
                 ),
-            
+
                 // Chart Container
                 SizedBox(
                   height: 300,
@@ -182,7 +196,9 @@ class _ResultDisplayState extends State<ResultDisplay> {
                           ), // match the label spacing
                           getDrawingHorizontalLine: (value) {
                             return FlLine(
-                              color: Theme.of(context).colorScheme.outlineVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outlineVariant,
                               strokeWidth:
                                   1, // solid, not dashed — omit dashArray entirely
                             );
@@ -202,7 +218,7 @@ class _ResultDisplayState extends State<ResultDisplay> {
                           leftTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
-                              reservedSize: 32,
+                              reservedSize: 64,
                               interval: getLeftInterval(
                                 entries,
                               ), // see helper below
@@ -211,13 +227,15 @@ class _ResultDisplayState extends State<ResultDisplay> {
                                 if (value != value.roundToDouble())
                                   return const SizedBox.shrink();
                                 return Text(
-                                  value.toInt().toString(),
-                                  style: const TextStyle(fontSize: 11),
+                                  '${(value * 100 / 11 * 2).toInt()} %',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.displaySmall,
                                 );
                               },
                             ),
                           ),
-            
+
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
@@ -235,10 +253,9 @@ class _ResultDisplayState extends State<ResultDisplay> {
                                     angle: -0.5,
                                     child: Text(
                                       formation.name,
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.displaySmall,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -251,7 +268,7 @@ class _ResultDisplayState extends State<ResultDisplay> {
                         barGroups: entries.asMap().entries.map((mapEntry) {
                           final index = mapEntry.key;
                           final value = mapEntry.value.value;
-            
+
                           return BarChartGroupData(
                             x: index,
                             barRods: [
@@ -270,9 +287,9 @@ class _ResultDisplayState extends State<ResultDisplay> {
                     ),
                   ),
                 ),
-            
+
                 SizedBox(height: 35),
-            
+
                 ElevatedButton(
                   onPressed: () {
                     setState(() {
@@ -281,22 +298,13 @@ class _ResultDisplayState extends State<ResultDisplay> {
                   },
                   child: Text('Montrer toute les formations'),
                 ),
-            
-                const SizedBox(height: 24), // Add some spacing before the button
-            
+
+                const SizedBox(
+                  height: 24,
+                ), // Add some spacing before the button
+
                 ElevatedButton(
                   onPressed: () {
-                    lnk.DatabaseHelper().insertResult(
-                      lnk.Result(
-                        id: null,
-                        formations: selectedFormations,
-                        time: DateTime.now(),
-                        category: Provider.of<CategoryProvider>(
-                          context,
-                          listen: false,
-                        ).selectedCategory,
-                      ),
-                    );
                     widget.onSessionEnded();
                   },
                   child: const Text('Recommencer'),
@@ -318,54 +326,24 @@ class _ResultDisplayState extends State<ResultDisplay> {
           mainAxisAlignment: MainAxisAlignment
               .center, // 3. Center the children inside the column
           children: [
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: entries.length,
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              // Add padding so cards don't clip flush against screen edges while scrolling
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemBuilder: (context, index) {
-                final formation = entries[index].key;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 14,
-                        height: 14,
-                        margin: const EdgeInsets.only(top: 3, right: 12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
+              child: Row(
+                children: [
+                  for (final entry in selectedFormations.entries)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: _FormationScoreCard(
+                        formation: entry.key,
+                        score: entry.value,
                       ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              formation.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              formation.description,
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                    ),
+                ],
+              ),
             ),
+
             const SizedBox(
               height: 24,
             ), // Added a little spacing above the button for better UI
@@ -377,11 +355,76 @@ class _ResultDisplayState extends State<ResultDisplay> {
               },
               child: const Text('Retourner sur le graph'),
             ),
+            const SizedBox(height: 24),
+
+            ElevatedButton(
+              onPressed: () {
+                widget.onSessionEnded();
+              },
+              child: const Text('Recommencer'),
+            ),
           ],
         ),
       );
     }
 
     return bodyWidget;
+  }
+}
+
+class _FormationScoreCard extends StatefulWidget {
+  final lnk.Formation formation;
+  final int score;
+
+  const _FormationScoreCard({required this.formation, required this.score});
+
+  @override
+  State<_FormationScoreCard> createState() => _FormationScoreCardState();
+}
+
+class _FormationScoreCardState extends State<_FormationScoreCard> {
+  @override
+  Widget build(BuildContext context) {
+    final image = widget.formation.image;
+    final hasImage = image != null && image.existsSync();
+
+    stderr.write('Image : ${widget.formation.imagePath} ');
+    return SizedBox(
+      width: 500,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: hasImage
+                ? Image.file(image, width: 300, height: 450, fit: BoxFit.cover)
+                : Container(
+                    width: 350,
+                    height: 525,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    child: Icon(
+                      Icons.image_not_supported_outlined,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            widget.formation.description,
+            style: Theme.of(context).textTheme.labelMedium,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${(widget.score * 100 / 11 * 2).toInt()} %',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+        ],
+      ),
+    );
   }
 }

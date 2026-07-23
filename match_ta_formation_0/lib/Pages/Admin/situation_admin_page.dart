@@ -181,7 +181,7 @@ class _SituationEditState extends State<SituationEdit> {
                 onPressed: widget.onClose,
                 icon: const Icon(
                   Icons.arrow_back,
-                  color: Color.fromARGB(255, 255, 255, 255),
+                  color: Color.fromARGB(255, 0, 0, 0),
                 ),
               ),
               const SizedBox(width: 8),
@@ -221,6 +221,7 @@ class _SituationEditState extends State<SituationEdit> {
                     Center(
                       child: Text(
                         'Swipe à ${widget.situation.responses?[index].type.label ?? 'Unknown'} :',
+                        style: Theme.of(context).textTheme.titleSmall,
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -235,9 +236,9 @@ class _SituationEditState extends State<SituationEdit> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Formations:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
                     ElevatedButton(
                       onPressed: () {
@@ -515,7 +516,7 @@ class _SituationAddState extends State<SituationAdd> {
                 onPressed: widget.onClose,
                 icon: const Icon(
                   Icons.arrow_back,
-                  color: Color.fromARGB(255, 255, 255, 255),
+                  color: Color.fromARGB(255, 0, 0, 0),
                 ),
               ),
               const SizedBox(width: 8),
@@ -555,6 +556,7 @@ class _SituationAddState extends State<SituationAdd> {
                     Center(
                       child: Text(
                         'Swipe à ${responses[index].type.label} :',
+                        style: Theme.of(context).textTheme.titleSmall,
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -570,9 +572,9 @@ class _SituationAddState extends State<SituationAdd> {
                     ),
                     const SizedBox(height: 8),
 
-                    const Text(
+                    Text(
                       'Formations:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
                     ElevatedButton(
                       onPressed: () {
@@ -611,7 +613,7 @@ class _SituationAddState extends State<SituationAdd> {
               ),
             ),
           ),
-          SizedBox(height : 16),
+          SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
               final updatedResponses = responses.asMap().entries.map((entry) {
@@ -637,7 +639,7 @@ class _SituationAddState extends State<SituationAdd> {
                 const SnackBar(content: Text('Situation added successfuly')),
               );
             },
-            
+
             child: const Text('Save'),
           ),
         ],
@@ -670,7 +672,7 @@ class SituationFormationCard extends StatelessWidget {
           children: [
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 120),
-              child: Text(text, style: Theme.of(context).textTheme.titleSmall),
+              child: Text(text, style: Theme.of(context).textTheme.bodySmall),
             ),
             IconButton(
               onPressed: onDelete,
